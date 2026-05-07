@@ -1,8 +1,6 @@
-import pandas as pd
 import streamlit as st
 import math
-import json
-import time
+
 from fuzzy_engine import evaluate_fuzzy_system
 
 st.set_page_config(
