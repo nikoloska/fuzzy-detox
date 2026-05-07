@@ -1,7 +1,7 @@
 import streamlit as st
 import math
 
-from fuzzy_engine import evaluate_fuzzy_system
+from fuzzy_engine_v2 import evaluate_fuzzy_system
 
 st.set_page_config(
     page_title="fuzzy-detox · Digital Habit Intelligence",
