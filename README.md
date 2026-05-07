@@ -95,7 +95,7 @@ Final Output: HabitBalance (0–10) + Personalised Recommendation
 | `LateNightUse` | 0–180 min after 22:00 | Combertaldi et al., Fribourg (2021) |
 | `SocialMediaUsage` | 0–100 % of screen time | Twenge & Campbell (2018) |
 
-### Intermediate Outputs (Subsystem 1)
+### Subsystem Outputs
 
 | Variable | Range | Key rule source |
 |---|---|---|
