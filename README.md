@@ -5,11 +5,50 @@
 
 ---
 
+## Quick Start
+
+### 1. Clone & install
+
+```bash
+git clone https://github.com/nikoloska/fuzzy-detox.git
+cd fuzzy-detox
+pip install -r requirements.txt
+```
+
+### 2. Run the dashboard
+
+```bash
+cd src
+python -m streamlit run app.py
+```
+
+The dashboard opens in your browser. Use the sliders to input your behaviour values and see your HabitBalance score and recommendation in real time.
+
+### 3. Run the notebooks
+
+```bash
+cd notebooks
+jupyter notebook
+```
+
+Open in order:
+- `01_data_exploration.ipynb` — explore the simulated dataset and real data distributions
+- `02_model_prototyping.ipynb` — run the engine on 200 simulated users, validate scenarios
+- `Screen_Time_Balance_FCM_Scenario.ipynb` — FCM scenario and intervention analysis
+
+### 4. Run the tests
+
+```bash
+pytest tests/test_fuzzy_model.py -v
+```
+
+---
+
 ## Overview
 
-**fuzzy-detox** is a two-subsystem Mamdani fuzzy inference system that analyses a user's digital device habits and provides personalised recommendations for healthier screen time balance.
+**fuzzy-detox** is a Mamdani fuzzy inference system that analyses a user's digital device habits and provides personalised recommendations for healthier screen time balance.
 
-Instead of measuring *how much* you use your phone, the system evaluates *how well* — detecting automatic checking behaviour, late-night use, and social media overload, then translating these into actionable advice.
+Instead of measuring *how much* you use your phone, the system evaluates *how well* — detecting automatic checking behaviour, screen glances, late-night use, and social media usage, then translating these into actionable advice.
 
 ### The Problem
 
@@ -31,19 +70,17 @@ Raw Inputs (4 variables)
         │
         ▼
 ┌───────────────────────┐
-│     Subsystem 1       │  Fuzzification → IF-THEN rules → Defuzzification
+│     Subsystem         │  Fuzzification → IF-THEN rules → Defuzzification
 │  (Behaviour Analysis) │
 └───────────────────────┘
         │
         ▼
-Intermediate Outputs:
+ Outputs:
   FocusQuality · SleepQuality · DigitalOverload
         │
         ▼
-┌───────────────────────┐
-│     Subsystem 2       │  Weighted aggregation
-│   (Habit Scoring)     │
-└───────────────────────┘
+ Weighted aggregation
+0.4 * focus + 0.4 * sleep + 0.2 * (10 - overload)    
         │
         ▼
 Final Output: HabitBalance (0–10) + Personalised Recommendation
@@ -98,45 +135,6 @@ fuzzy-detox/
 │
 ├── requirements.txt
 └── README.md
-```
-
----
-
-## Quick Start
-
-### 1. Clone & install
-
-```bash
-git clone https://github.com/nikoloska/fuzzy-detox.git
-cd fuzzy-detox
-pip install -r requirements.txt
-```
-
-### 2. Run the dashboard
-
-```bash
-cd src
-python -m streamlit run app.py
-```
-
-The dashboard opens in your browser. Use the sliders to input your behaviour values and see your HabitBalance score and recommendation in real time.
-
-### 3. Run the notebooks
-
-```bash
-cd notebooks
-jupyter notebook
-```
-
-Open in order:
-- `01_data_exploration.ipynb` — explore the simulated dataset and real data distributions
-- `02_model_prototyping.ipynb` — run the engine on 200 simulated users, validate scenarios
-- `Screen_Time_Balance_FCM_Scenario.ipynb` — FCM scenario and intervention analysis
-
-### 4. Run the tests
-
-```bash
-pytest tests/test_fuzzy_model.py -v
 ```
 
 ---
