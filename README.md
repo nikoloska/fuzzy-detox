@@ -66,7 +66,7 @@ Final Output: HabitBalance (0–10) + Personalised Recommendation
 | `SleepQuality` | 0–10 | Rasch & Born (2013), Fribourg sleep lab |
 | `DigitalOverload` | 0–10 | Kushlev et al. (2017), Sweller CLT (1991) |
 
-### Final Output (Subsystem 2)
+### Final Output
 
 ```
 HabitBalance = 0.4 × FocusQuality
