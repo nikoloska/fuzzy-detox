@@ -71,7 +71,7 @@ fuzzy-detox uses a **two-layer hierarchical fuzzy system** — a recognised desi
 
 > **Figure 1.** Two-layer hierarchical Mamdani fuzzy inference system used in fuzzy-detox. Raw behavioural inputs are processed through three parallel fuzzy subsystems (FocusQuality, SleepQuality, and DigitalOverload), whose outputs feed a fourth fuzzy inference system that produces the final HabitBalance score and personalised recommendation.
 
-> **Why hierarchical?** Each subsystem captures a distinct dimension of digital behaviour with its own rule base. Their defuzzified outputs feed a dedicated 4th FIS rather than a crisp formula — preserving fuzziness throughout the entire pipeline.
+**Why hierarchical?** Each subsystem captures a distinct dimension of digital behaviour with its own rule base. Their defuzzified outputs feed a dedicated 4th FIS rather than a crisp formula — preserving fuzziness throughout the entire pipeline.
 
 ---
 
