@@ -1,150 +1,127 @@
-# Project : Fuzzy-detox 🧠📱
+# fuzzy-detox 🧠📱
 
-> **Fuzzy Logic–Based Screen Time Balance and Digital Habit Recommendation System**  
-> University of Fribourg · Fuzzy Sets and Systems · April 2026
+> **Hierarchical Mamdani Fuzzy Inference System for Digital Habit Analysis**  
+> University of Fribourg · Fuzzy Sets and Systems II · Spring 2026
+
+- **Allizha Theiventhiram** — University of Neuchâtel
+- **Tishana Suthenthiran** — University of Fribourg
+- **Sandra Nikoloska** — University of Bern
+
+*Course: Fuzzy Sets and Systems II — Prof. Dr. Edy Portmann, Human-IST Institute, University of Fribourg*
+---
+
+## What is fuzzy-detox?
+
+**fuzzy-detox** analyses a user's digital device habits using a two-layer hierarchical Mamdani Fuzzy Inference System and produces a personalised **HabitBalance score (0–10)** along with evidence-based recommendations.
+
+Unlike existing tools (Apple Screen Time, Google Digital Wellbeing) that only count total minutes, fuzzy-detox evaluates *how* you use your phone — detecting automatic checking behaviour, late-night use patterns, social media exposure, and screen glances — and handles the inherent ambiguity of human behaviour through fuzzy logic.
+
+**The core argument:** "50 phone checks per day" is not simply good or bad. Fuzzy logic captures this grey area. A crisp rule-based system drops your score by 1.5 points for 2 extra glances at a threshold. The fuzzy system transitions smoothly — 7× more stable.
 
 ---
 
 ## Quick Start
 
-### 1. Clone & install
+### 1. Clone and install
 
 ```bash
 git clone https://github.com/nikoloska/fuzzy-detox.git
-cd fuzzy-detox
+cd fuzzy-detox-main
 pip install -r requirements.txt
+pip install scipy matplotlib
 ```
 
-### 2. Run the dashboard
+### 2. Launch the dashboard
 
 ```bash
-cd src
-python -m streamlit run app.py
+streamlit run src/app.py
 ```
 
-The dashboard opens in your browser. Use the sliders to input your behaviour values and see your HabitBalance score and recommendation in real time.
+The browser opens at `http://localhost:8501`. Use the sidebar sliders to enter your values — scores and recommendations update in real time.
 
-### 3. Run the notebooks
-
-```bash
-cd notebooks
-jupyter notebook
-```
-
-Open in order:
-- `01_data_exploration.ipynb` — explore the simulated dataset and real data distributions
-- `02_model_prototyping.ipynb` — run the engine on 200 simulated users, validate scenarios
-- `Screen_Time_Balance_FCM_Scenario.ipynb` — FCM scenario and intervention analysis
-
-### 4. Run the tests
+### 3. Run the tests
 
 ```bash
 pytest tests/test_fuzzy_model.py -v
 ```
 
----
+Expected: **27 passed**.
 
-## Overview
+### 4. Run the notebooks
 
-**fuzzy-detox** is a Mamdani fuzzy inference system that analyses a user's digital device habits and provides personalised recommendations for healthier screen time balance.
+```bash
+jupyter notebook
+```
 
-Instead of measuring *how much* you use your phone, the system evaluates *how well* — detecting automatic checking behaviour, screen glances, late-night use, and social media usage, then translating these into actionable advice.
-
-### The Problem
-
-Existing screen-time tools (Apple Screen Time, Google Digital Wellbeing) only count total minutes. They ignore:
-- **When** you check your phone (idle moments, late at night)
-- **What** you consume (social media vs. productive content)
-- **How** checking behaviour fragments attention and disrupts sleep
-
-### Our Solution
-
-A fuzzy logic system that captures the grey area of human digital behaviour — because "50 phone checks per day" is not simply good or bad. It depends on context.
+Open in order:
+- `data_simulation/data_simulation.ipynb` — simulated dataset and real data distributions
+- `model_prototyping/model_prototyping.ipynb` — engine evaluation on 200 synthetic users
+- `notebooks/Screen_Time_Balance_FCM_Scenario.ipynb` — Fuzzy Cognitive Map scenario analysis
 
 ---
 
 ## System Architecture
 
+fuzzy-detox uses a **two-layer hierarchical fuzzy system** — a recognised design pattern for complex problems (Mendel, 2001).
+
 ```
 Raw Inputs (4 variables)
-        │
-        ▼
-┌───────────────────────┐
-│     Subsystem         │  Fuzzification → IF-THEN rules → Defuzzification
-│  (Behaviour Analysis) │
-└───────────────────────┘
-        │
-        ▼
- Outputs:
+         │
+         ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│  Layer 1 — Three parallel Mamdani FIS                               │
+│                                                                     │
+│   FIS-1: FocusQuality    FIS-2: SleepQuality    FIS-3: Overload    │
+│   Each: Fuzzification → IF-THEN rules → Centroid defuzzification   │
+└─────────────────────────────────────────────────────────────────────┘
+         │
+         ▼
+  Intermediate scores (0–10):
   FocusQuality · SleepQuality · DigitalOverload
-        │
-        ▼
- Weighted aggregation
-0.4 * focus + 0.4 * sleep + 0.2 * (10 - overload)    
-        │
-        ▼
-Final Output: HabitBalance (0–10) + Personalised Recommendation
+         │
+         ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│  Layer 2 — 4th Mamdani FIS (HabitBalance)                           │
+│                                                                     │
+│   Inputs: FocusQuality, SleepQuality, DigitalOverload              │
+│   27 IF-THEN rules · 5 output terms · Centroid defuzzification     │
+│   → HabitBalance is produced end-to-end by fuzzy inference         │
+└─────────────────────────────────────────────────────────────────────┘
+         │
+         ▼
+  HabitBalance (0–10) + Personalised Recommendation
 ```
 
-### Input Variables
-
-| Variable | Range | Source |
-|---|---|---|
-| `ScreenGlances` | 0–150 checks/day | Ellis & Shaw, Lancaster (2018) |
-| `IdleChecking` | 0–80 checks/day | Mark et al. (2008) — 23-min recovery time |
-| `LateNightUse` | 0–180 min after 22:00 | Combertaldi et al., Fribourg (2021) |
-| `SocialMediaUsage` | 0–100 % of screen time | Twenge & Campbell (2018) |
-
-### Subsystem Outputs
-
-| Variable | Range | Key rule source |
-|---|---|---|
-| `FocusQuality` | 0–10 | Ward et al. (2017) — Brain Drain effect |
-| `SleepQuality` | 0–10 | Rasch & Born (2013), Fribourg sleep lab |
-| `DigitalOverload` | 0–10 | Kushlev et al. (2017), Sweller CLT (1991) |
-
-### Final Output
-
-```
-HabitBalance = 0.4 × FocusQuality
-             + 0.4 × SleepQuality
-             + 0.2 × (10 − DigitalOverload)
-```
+> **Why hierarchical?** Each subsystem captures a distinct dimension of digital behaviour with its own rule base. Their defuzzified outputs feed a dedicated 4th FIS rather than a crisp formula — preserving fuzziness throughout the entire pipeline.
 
 ---
 
-## Repository Structure
+## Inputs
 
-```
-fuzzy-detox/
-├── src/
-│   ├── fuzzy_engine.py          # Core Mamdani FIS — all MFs, rules, evaluation function
-│   └── app.py                   # Streamlit dashboard (run this)
-│
-├── notebooks/
-│   ├── 01_data_exploration.ipynb      # Data simulation — hybrid dataset (200 user-days)
-│   ├── 02_model_prototyping.ipynb     # Engine evaluation — scenarios, fuzzy vs crisp, sensitivity
-│   └── Screen_Time_Balance_FCM_Scenario.ipynb  # Fuzzy Cognitive Map — scenario & intervention analysis
-│
-├── tests/
-│   └── test_fuzzy_model.py      # pytest unit tests — 20 tests across 6 test classes
-│
-├── data/
-│   ├── simulated_dataset.csv          # 200 synthetic user-days (4 profiles × 50)
-│   └── simulated_dataset_full.csv     # Same + source tags per variable
-│
-├── requirements.txt
-└── README.md
-```
+| Variable | Unit | Range | Literature anchor |
+|---|---|---|---|
+| `ScreenGlances` | checks/day | 0–150 | Ellis & Shaw, Lancaster University (2018) |
+| `IdleChecking` | checks/day | 0–80 | Mark et al., CHI (2008) — 23 min recovery |
+| `LateNightUse` | min after 22:00 | 0–180 | Combertaldi et al., Univ. Fribourg (2021) |
+| `SocialMediaUsage` | % of screen time | 0–100 | Twenge & Campbell (2018) |
+
+## Outputs
+
+| Variable | Range | Description |
+|---|---|---|
+| `FocusQuality` | 0–10 | Ability to concentrate without digital interruption |
+| `SleepQuality` | 0–10 | Likely sleep quality based on night-time patterns |
+| `DigitalOverload` | 0–10 | Level of cognitive overload from digital stimulation |
+| **`HabitBalance`** | **0–10** | **Overall digital habit health — main score** |
+
+A score ≥ 7 indicates healthy digital habits. Below 4 signals patterns that likely affect focus and sleep.
 
 ---
 
-## The Fuzzy Engine
-
-The core function in `src/fuzzy_engine.py`:
+## Using the Engine Directly
 
 ```python
-from fuzzy_engine import evaluate_fuzzy_system
+from src.fuzzy_engine_v4 import evaluate_fuzzy_system
 
 result = evaluate_fuzzy_system(
     screen_glances_value = 78,   # checks/day
@@ -153,8 +130,8 @@ result = evaluate_fuzzy_system(
     social_media_value   = 62,   # % of screen time
 )
 
-print(result['outputs']['HabitBalance'])    # e.g. 3.1
-print(result['recommendation'])             # personalised advice
+print(result['outputs']['HabitBalance'])   # → 3.85
+print(result['recommendation'])            # → personalised advice string
 ```
 
 ### Example output
@@ -166,85 +143,164 @@ print(result['recommendation'])             # personalised advice
     "LateNightUse": 67,  "SocialMediaUsage": 62
   },
   "outputs": {
-    "FocusQuality": 3.4,  "SleepQuality": 2.9,
-    "DigitalOverload": 8.1, "HabitBalance": 3.1
+    "FocusQuality": 4.28, "SleepQuality": 5.21,
+    "DigitalOverload": 6.86, "HabitBalance": 3.85
   },
   "labels": {
-    "FocusQuality": "Low", "SleepQuality": "Low",
+    "FocusQuality": "Medium", "SleepQuality": "Medium",
     "DigitalOverload": "High", "HabitBalance": "Low"
   },
-  "recommendation": "Sleep quality is weak. Reduce late-night use after 22:00."
+  "recommendation": "Replace late-night social scrolling with one planned offline wind-down activity."
 }
+```
+
+---
+
+## Dashboard Features
+
+| Section | What it shows |
+|---|---|
+| **HabitBalance gauge** | Live score with colour-coded needle |
+| **Profile detector** | Which of 4 archetypes matches your pattern |
+| **Radar chart** | Focus, Sleep, Balance, Not-Overloaded at a glance |
+| **Recommendations** | 3 personalised, literature-grounded actions |
+| **Session history** | Up to 8 saved readings with sparkline trend |
+| **Profile comparison** | Your score vs. 4 archetypes |
+| **Rules firing** | Which IF-THEN rules are currently active |
+| **Input MF visualisation** | Where your values fall on each fuzzy set |
+| **Output MF visualisation** | How each score is defuzzified |
+| **Fuzzy vs. crisp comparison** | Live side-by-side + 3 analysis charts |
+| **Sensitivity analysis** | Which input drives HabitBalance the most |
+
+---
+
+## Evaluation
+
+### Fuzzy vs. Crisp Comparison
+
+A crisp rule-based baseline (`src/crisp_engine.py`) uses the same thresholds as the fuzzy MF crossover points. At the critical threshold of 40 glances/day:
+
+| | 39 glances | 41 glances | Δ |
+|---|---|---|---|
+| **Crisp** | 7.00 | 5.50 | **−1.50 pts** |
+| **Fuzzy** | 6.60 | 6.40 | **−0.20 pts** |
+
+The fuzzy system is **7.5× more stable** at threshold boundaries — consistent with the rationale for fuzzy logic in human behaviour modelling.
+
+### Sensitivity Analysis
+
+Each input was swept across its full range while others were fixed at ideal values. HabitBalance variation:
+
+| Input | Range of HabitBalance | Influence |
+|---|---|---|
+| `ScreenGlances` | 5.01 pts (50% of scale) | ★★★★ Highest |
+| `LateNightUse` | 4.68 pts (47% of scale) | ★★★★ High |
+| `IdleChecking` | 2.68 pts (27% of scale) | ★★★ Medium |
+| `SocialMediaUsage` | 1.25 pts (12% of scale) | ★★ Lowest |
+
+ScreenGlances and LateNightUse are the most critical variables for digital habit health.
+
+---
+
+## Testing
+
+27 unit tests across 6 classes:
+
+```
+TestOutputStructure   (6)  — return type, required keys, variable names
+TestOutputRanges      (5)  — all outputs within 0–10 for 5 input combinations
+TestProfileOrdering   (6)  — balanced > night owl, correct score directions
+TestFuzzySmoothness   (2)  — no abrupt jumps, monotonic decrease
+TestLabels            (4)  — correct label assignments and valid label set
+TestInputClamping     (2)  — graceful handling of out-of-range inputs
+```
+
+```bash
+pytest tests/test_fuzzy_model.py -v
+# 27 passed in ~12s
+```
+
+---
+
+## Repository Structure
+
+```
+fuzzy-detox-main/
+│
+├── src/
+│   ├── app.py                  # Streamlit dashboard — run this
+│   ├── fuzzy_engine_v4.py      # Hierarchical Mamdani FIS (4 subsystems)
+│   ├── crisp_engine.py         # Crisp if-else baseline for comparison
+│   ├── mf_viz.py               # Membership function visualisation (matplotlib)
+│   ├── comparison_viz.py       # Fuzzy vs. crisp comparison charts
+│   ├── sensitivity.py          # Sensitivity analysis module
+│   ├── comparison_app.py       # Standalone fuzzy vs. crisp Streamlit app
+│   └── [app_v1–v3, engine_v1–v3, crisp_app]  — iteration history
+│
+├── notebooks/
+│   ├── Screen_Time_Balance_FCM_Scenario.ipynb  # FCM tutorial (course deliverable)
+│   └── [see also data_simulation/ and model_prototyping/]
+│
+├── data_simulation/
+│   ├── data_simulation.ipynb         # Hybrid dataset construction
+│   ├── simulated_dataset.csv         # 200 synthetic user-days
+│   └── simulated_dataset_full.csv    # With source tags per variable
+│
+├── model_prototyping/
+│   ├── model_prototyping.ipynb       # Engine evaluation on 200 users
+│   ├── fuzzy_results.csv             # Output scores for all 200 users
+│   └── [sensitivity, MF, output distribution plots]
+│
+├── docs/
+│   ├── USER_MANUAL.md                # Installation and usage guide
+│   ├── CHANGELOG.md                  # v1 → v4 iteration log
+│   ├── comparison_threshold.png      # Threshold problem visualisation
+│   ├── comparison_sweep.png          # Full sweep comparison chart
+│   ├── comparison_profiles.png       # 5-profile comparison
+│   ├── sensitivity_curves.png        # Response curves per input
+│   └── sensitivity_ranking.png       # Input influence ranking
+│
+├── tests/
+│   └── test_fuzzy_model.py           # 27 unit tests (pytest)
+│
+├── requirements.txt
+└── README.md
 ```
 
 ---
 
 ## Data Strategy
 
-No single public dataset contains all four input variables. We use a **hybrid approach**:
+No single public dataset contains all four input variables simultaneously. We use a **hybrid anchoring approach**:
 
-| Variable | Source |
+| Variable | Strategy |
 |---|---|
-| `ScreenGlances` | Anchored to real distributions — `Phone_Unlocks_Per_Day` from the Global Mobile Phone Addiction Dataset (Kaggle, n=3,000) |
-| `SocialMediaUsage` | Derived from `Social_Media_Usage_Hours / Daily_Screen_Time_Hours` (same Kaggle dataset) |
+| `ScreenGlances` | Anchored to real distributions from Global Mobile Phone Addiction Dataset (Kaggle, n=3,000) — `Phone_Unlocks_Per_Day` |
+| `SocialMediaUsage` | Derived from same dataset — `Social_Media_Usage_Hours / Daily_Screen_Time_Hours` |
 | `IdleChecking` | Simulated — distributions from Ellis & Shaw, Lancaster University (2018) |
-| `LateNightUse` | Simulated — distributions from Combertaldi, Ort, Cordi, Fahr & Rasch, University of Fribourg (2021) |
+| `LateNightUse` | Simulated — distributions from Combertaldi et al., University of Fribourg (2021) |
 
-The simulated dataset covers **4 user archetypes** identified from user interviews:
+The dataset covers 4 user archetypes identified from user interviews:
 
-| Profile | Behaviour pattern | Expected HabitBalance |
+| Profile | Behaviour | Expected HabitBalance |
 |---|---|---|
-| 🟢 Balanced User | Low on all inputs — intentional use | High (> 6) |
-| 🔵 Focused Worker | Low glances, low social media | Medium-High |
-| 🟣 Night Owl | High late-night use, high social media | Low |
-| 🔴 Distracted Achiever | High glances, high idle checking | Low |
+| ⚖️ Balanced User | Low across all inputs — intentional use | High (≥ 7) |
+| 📚 Focused Worker | Low glances, low social media | Medium–High |
+| 🌙 Night Owl | High late-night use, high social media | Low |
+| 📲 Distracted Achiever | High glances, high idle checking | Low |
 
 ---
 
-## Membership Functions
+## References
 
-All membership functions use **trapezoid** (Low, High sets) and **triangle** (Medium set) shapes with deliberate overlaps. The overlap zones ensure smooth, gradual output changes rather than abrupt threshold jumps.
-
-Example — `ScreenGlances`:
-- **Low:** `trapMF [0, 0, 20, 40]` — below 40 checks: intentional, controlled use
-- **Medium:** `triMF [20, 50, 90]` — peak at 50: Lancaster study average
-- **High:** `trapMF [65, 90, 150, 150]` — above 65: cognitive stress zone (Kushlev 2017)
-
----
-
-## Evaluation Methodology
-
-Three evaluation approaches (see `02_model_prototyping.ipynb`):
-
-**1. Scenario-Based Testing**  
-200 synthetic user-days across 4 profiles are fed through the engine. 12 explicit pass/fail checks validate that each profile receives the expected output direction.
-
-**2. Fuzzy vs. Crisp Logic Comparison**  
-The fuzzy system is compared against a traditional if-else baseline at borderline input values. The fuzzy system produces smooth, proportional transitions; the crisp baseline produces abrupt jumps.
-
-**3. Sensitivity Analysis**  
-Each input is varied in +5 increments while others are held fixed. Output curves are monotonic and smooth — confirming the Centroid defuzzification behaves correctly.
-
----
-
-## Authors & Collaboration
-
-- Allizha Theiventhiram — University of Neuchâtel  
-- Tishana Suthenthiran — University of Fribourg  
-- Sandra Nikoloska — University of Bern  
----
-
-## Key References
-
-- Sweller, J. (1991). Cognitive Load Theory. *Cognitive Science*, 12(2).
-- Ward, A. F. et al. (2017). Brain Drain: Smartphone presence reduces cognitive capacity. *JACR*, 2(2).
-- Kushlev, K. et al. (2017). Digitally connected, socially disconnected. *Computers in Human Behavior*, 76.
-- Przybylski, A. K., & Weinstein, N. (2017). Goldilocks hypothesis. *Psychological Science*, 28(2).
-- Twenge, J. M., & Campbell, W. K. (2018). Screen time and lower well-being. *Preventive Medicine Reports*, 12.
-- Combertaldi, S. L., Ort, A., Cordi, M., Fahr, A., & Rasch, B. (2021). Pre-sleep social media use does not strongly disturb sleep. *Sleep Medicine*, 87. **University of Fribourg.**
-- Ellis, D. A., & Shaw, H. (2018). Typical smartphone usage dataset. Lancaster University.
+- Mendel, J.M. (2001). *Uncertain Rule-Based Fuzzy Systems*. Springer. — hierarchical fuzzy systems
+- Sweller, J. (1994). Cognitive load theory. *Educational Psychology Review*, 6(4).
+- Ward, A.F. et al. (2017). Brain drain: Smartphone presence reduces cognitive capacity. *JACR*, 2(2).
+- Kushlev, K. et al. (2015). Checking email less frequently reduces stress. *Computers in Human Behavior*, 43.
+- Combertaldi, S.L., Ort, A., Cordi, M., Fahr, A., & Rasch, B. (2021). Pre-sleep social media use does not strongly disturb sleep. *Sleep Medicine*, 87. **University of Fribourg.**
+- Ellis, D.A., & Shaw, H. (2018). Typical smartphone usage dataset. Lancaster University.
 - Mark, G., Gudith, D., & Klocke, U. (2008). The cost of interrupted work. *CHI '08*.
-- Siebers, T. et al. (2024). Adolescents' digital nightlife. *Journal of Communication*, 74(5).
-- Brautsch, L. A. et al. (2023). Digital media use and sleep. *Sleep Medicine Reviews*, 68.
+- Twenge, J.M., & Campbell, W.K. (2018). Associations between screen time and lower psychological well-being. *Preventive Medicine Reports*, 12.
+- Przybylski, A.K., & Weinstein, N. (2017). A large-scale test of the Goldilocks hypothesis. *Psychological Science*, 28(2).
 - Newport, C. (2016). *Deep Work*. Grand Central Publishing.
-- E. Portmann, G. Wilke, L. Terán, and S. D'Onofrio, Eds. *Fuzzy Sets and Systems I*. Springer Nature Switzerland, 2026.
+- Portmann, E. et al., Eds. (2026). *Fuzzy Sets and Systems I–III*. Springer Nature Switzerland.
