@@ -65,33 +65,11 @@ Open in order:
 
 fuzzy-detox uses a **two-layer hierarchical fuzzy system** — a recognised design pattern for complex problems (Mendel, 2001).
 
-```
-Raw Inputs (4 variables)
-         │
-         ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│  Layer 1 — Three parallel Mamdani FIS                               │
-│                                                                     │
-│   FIS-1: FocusQuality    FIS-2: SleepQuality    FIS-3: Overload    │
-│   Each: Fuzzification → IF-THEN rules → Centroid defuzzification   │
-└─────────────────────────────────────────────────────────────────────┘
-         │
-         ▼
-  Intermediate scores (0–10):
-  FocusQuality · SleepQuality · DigitalOverload
-         │
-         ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│  Layer 2 — 4th Mamdani FIS (HabitBalance)                           │
-│                                                                     │
-│   Inputs: FocusQuality, SleepQuality, DigitalOverload              │
-│   27 IF-THEN rules · 5 output terms · Centroid defuzzification     │
-│   → HabitBalance is produced end-to-end by fuzzy inference         │
-└─────────────────────────────────────────────────────────────────────┘
-         │
-         ▼
-  HabitBalance (0–10) + Personalised Recommendation
-```
+<p align="center">
+  <img src="fuzzy_system_architecture.png" alt="System Architecture of fuzzy-detox" width="100%">
+</p>
+
+> **Figure 1.** Two-layer hierarchical Mamdani fuzzy inference system used in fuzzy-detox. Raw behavioural inputs are processed through three parallel fuzzy subsystems (FocusQuality, SleepQuality, and DigitalOverload), whose outputs feed a fourth fuzzy inference system that produces the final HabitBalance score and personalised recommendation.
 
 > **Why hierarchical?** Each subsystem captures a distinct dimension of digital behaviour with its own rule base. Their defuzzified outputs feed a dedicated 4th FIS rather than a crisp formula — preserving fuzziness throughout the entire pipeline.
 
