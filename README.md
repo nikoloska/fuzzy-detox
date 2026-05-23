@@ -1,13 +1,14 @@
 # fuzzy-detox 🧠📱
 
-> **Hierarchical Mamdani Fuzzy Inference System for Digital Habit Analysis**  
-> University of Fribourg · Fuzzy Sets and Systems II · Spring 2026
+**Hierarchical Mamdani Fuzzy Inference System for Digital Habit Analysis** 
 
-> **Allizha Theiventhiram** — University of Neuchâtel
-> **Tishana Suthenthiran** — University of Fribourg
-> **Sandra Nikoloska** — University of Bern
+>*Course: Fuzzy Sets and Systems II — Prof. Dr. Edy Portmann, Human-IST Institute*
+>University of Fribourg · Fuzzy Sets and Systems II · Spring 2026
 
-> *Course: Fuzzy Sets and Systems II — Prof. Dr. Edy Portmann, Human-IST Institute, University of Fribourg*
+**Allizha Theiventhiram** — University of Neuchâtel  
+**Tishana Suthenthiran** — University of Fribourg  
+**Sandra Nikoloska** — University of Bern  
+
 ---
 
 ## What is fuzzy-detox?
