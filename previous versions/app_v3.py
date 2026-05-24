@@ -1,7 +1,10 @@
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 import streamlit as st
 import math
 
-from fuzzy_engine_v3 import evaluate_fuzzy_system
+from fuzzy_engine_v4 import evaluate_fuzzy_system
 
 st.set_page_config(
     page_title="fuzzy-detox · Digital Habit Balance",
@@ -33,84 +36,39 @@ header { visibility: visible; }
 .stDeployButton { display: none; }
 html, body, [class*="css"] { font-family: 'Outfit', sans-serif; color: #e2e8f0; }
 
-/* SIDEBAR */
-section[data-testid="stSidebar"] {
-    background: rgba(2,8,20,0.97) !important;
-    border-right: 1px solid rgba(0,212,255,0.1) !important;
-}
+section[data-testid="stSidebar"] { background: rgba(2,8,20,0.97) !important; border-right: 1px solid rgba(0,212,255,0.1) !important; }
 section[data-testid="stSidebar"] .block-container { padding: 1.5rem 0.9rem !important; }
-.sidebar-brand {
-    font-family: 'JetBrains Mono', monospace; font-size: 0.63rem; font-weight: 500;
-    color: rgba(0,212,255,0.55); letter-spacing: 0.2em; text-transform: uppercase;
-    margin-bottom: 1.5rem; padding-bottom: 0.8rem;
-    border-bottom: 1px solid rgba(0,212,255,0.1);
-}
-.zone-tag {
-    display: inline-flex; align-items: center; gap: 5px;
-    font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; font-weight: 500;
-    padding: 3px 10px; border-radius: 999px; margin-top: 3px; margin-bottom: 6px;
-}
+.sidebar-brand { font-family: 'JetBrains Mono', monospace; font-size: 0.63rem; font-weight: 500; color: rgba(0,212,255,0.55); letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 1.5rem; padding-bottom: 0.8rem; border-bottom: 1px solid rgba(0,212,255,0.1); }
+.zone-tag { display: inline-flex; align-items: center; gap: 5px; font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; font-weight: 500; padding: 3px 10px; border-radius: 999px; margin-top: 3px; margin-bottom: 6px; }
 .zone-low    { background: rgba(16,185,129,0.12); color: #34d399; border: 1px solid rgba(16,185,129,0.25); }
 .zone-medium { background: rgba(245,158,11,0.12); color: #fbbf24; border: 1px solid rgba(245,158,11,0.25); }
 .zone-high   { background: rgba(239,68,68,0.12);  color: #f87171; border: 1px solid rgba(239,68,68,0.25); }
 
-/* HERO */
-.hero-wrapper {
-    padding: 1.8rem 2rem 1.6rem; border-radius: 20px;
-    background: rgba(255,255,255,0.022);
-    border: 1px solid rgba(0,212,255,0.1);
-    position: relative; overflow: hidden; margin-bottom: 1.2rem;
-}
-.hero-wrapper::before {
-    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(0,212,255,0.6), rgba(245,158,11,0.4), transparent);
-}
-.hero-eyebrow {
-    font-family: 'JetBrains Mono', monospace; font-size: 0.65rem;
-    letter-spacing: 0.2em; text-transform: uppercase; color: rgba(0,212,255,0.65);
-    margin-bottom: 0.5rem; display: flex; align-items: center; gap: 8px;
-}
+.hero-wrapper { padding: 1.8rem 2rem 1.6rem; border-radius: 20px; background: rgba(255,255,255,0.022); border: 1px solid rgba(0,212,255,0.1); position: relative; overflow: hidden; margin-bottom: 1.2rem; }
+.hero-wrapper::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(0,212,255,0.6), rgba(245,158,11,0.4), transparent); }
+.hero-eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(0,212,255,0.65); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 8px; }
 .hero-eyebrow::before { content: ''; display: inline-block; width: 18px; height: 1px; background: rgba(0,212,255,0.6); }
-.hero-title {
-    font-family: 'Outfit', sans-serif; font-size: 2.8rem; font-weight: 900;
-    line-height: 1.0; letter-spacing: -0.02em; color: #f8fafc; margin-bottom: 0.4rem;
-}
+.hero-title { font-family: 'Outfit', sans-serif; font-size: 2.8rem; font-weight: 900; line-height: 1.0; letter-spacing: -0.02em; color: #f8fafc; margin-bottom: 0.4rem; }
 .hero-title span { background: linear-gradient(135deg, #00d4ff, #a78bfa, #f59e0b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 .hero-sub { font-family: 'Outfit', sans-serif; font-size: 0.95rem; font-weight: 300; color: rgba(226,232,240,0.45); max-width: 580px; line-height: 1.6; }
 .hero-corner { position: absolute; right: 1.8rem; top: 50%; transform: translateY(-50%); font-family: 'JetBrains Mono', monospace; font-size: 4.5rem; font-weight: 700; color: rgba(0,212,255,0.035); letter-spacing: -0.05em; user-select: none; }
 
-/* PROFILE STRIP */
-.profile-strip {
-    display: flex; align-items: center; gap: 1rem; padding: 0.85rem 1.4rem;
-    border-radius: 14px; background: rgba(99,102,241,0.07);
-    border: 1px solid rgba(99,102,241,0.18); margin-bottom: 1.2rem;
-    position: relative; overflow: hidden;
-}
+.profile-strip { display: flex; align-items: center; gap: 1rem; padding: 0.85rem 1.4rem; border-radius: 14px; background: rgba(99,102,241,0.07); border: 1px solid rgba(99,102,241,0.18); margin-bottom: 1.2rem; position: relative; overflow: hidden; }
 .profile-strip::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: linear-gradient(180deg, #6366f1, #a78bfa); border-radius: 3px 0 0 3px; }
 .profile-icon { font-size: 1.4rem; }
 .profile-name { font-family: 'Outfit', sans-serif; font-size: 0.95rem; font-weight: 700; color: #c4b5fd; }
 .profile-desc { font-family: 'Space Grotesk', sans-serif; font-size: 0.78rem; color: rgba(196,181,253,0.55); }
 .profile-right { margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; color: rgba(99,102,241,0.45); letter-spacing: 0.1em; text-transform: uppercase; }
 
-/* CARDS */
-.card {
-    border-radius: 18px; padding: 1.2rem 1.3rem;
-    background: rgba(255,255,255,0.022); border: 1px solid rgba(255,255,255,0.07);
-    position: relative; overflow: hidden; height: 100%;
-}
+.card { border-radius: 18px; padding: 1.2rem 1.3rem; background: rgba(255,255,255,0.022); border: 1px solid rgba(255,255,255,0.07); position: relative; overflow: hidden; height: 100%; }
 .card-glow-cyan::before  { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(0,212,255,0.5), transparent); }
 .card-glow-amber::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(245,158,11,0.55), transparent); }
 .card-glow-violet::before{ content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(139,92,246,0.55), transparent); }
 .card-glow-green::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(16,185,129,0.5), transparent); }
 .card-glow-pink::before  { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(236,72,153,0.5), transparent); }
-.card-label {
-    font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; font-weight: 500;
-    letter-spacing: 0.16em; text-transform: uppercase; color: rgba(226,232,240,0.3);
-    margin-bottom: 0.9rem; display: flex; align-items: center; gap: 8px;
-}
+.card-label { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(226,232,240,0.3); margin-bottom: 0.9rem; display: flex; align-items: center; gap: 8px; }
 .card-label::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.05); }
 
-/* HABIT BALANCE */
 .hab-score-wrap { text-align: center; padding: 0.3rem 0; }
 .hab-number { font-family: 'Outfit', sans-serif; font-size: 4rem; font-weight: 900; line-height: 1; letter-spacing: -0.03em; }
 .hab-denom { font-family: 'JetBrains Mono', monospace; font-size: 1.1rem; font-weight: 300; color: rgba(226,232,240,0.25); }
@@ -119,7 +77,6 @@ section[data-testid="stSidebar"] .block-container { padding: 1.5rem 0.9rem !impo
 .lab-medium { background: rgba(245,158,11,0.13); color: #fbbf24; border: 1px solid rgba(245,158,11,0.28); }
 .lab-poor   { background: rgba(239,68,68,0.13);  color: #f87171; border: 1px solid rgba(239,68,68,0.28);  }
 
-/* MINI METRICS */
 .mini-metric { border-radius: 14px; padding: 1.1rem 1.2rem; background: rgba(255,255,255,0.022); border: 1px solid rgba(255,255,255,0.065); position: relative; overflow: hidden; }
 .mini-metric-name { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(226,232,240,0.3); margin-bottom: 0.35rem; }
 .mini-metric-val  { font-family: 'Outfit', sans-serif; font-size: 2rem; font-weight: 800; line-height: 1; letter-spacing: -0.02em; }
@@ -127,11 +84,9 @@ section[data-testid="stSidebar"] .block-container { padding: 1.5rem 0.9rem !impo
 .mini-bar-track   { height: 2px; border-radius: 1px; background: rgba(255,255,255,0.05); margin-top: 0.7rem; overflow: hidden; }
 .mini-bar-fill    { height: 100%; border-radius: 1px; }
 
-/* RECOMMENDATION */
 .rec-general { font-family: 'Outfit', sans-serif; font-size: 0.9rem; font-weight: 300; color: rgba(226,232,240,0.7); line-height: 1.6; padding: 0.9rem 1.1rem; border-radius: 10px; background: rgba(0,212,255,0.04); border-left: 2px solid rgba(0,212,255,0.35); margin-bottom: 0.7rem; }
 .rec-item { font-family: 'Space Grotesk', sans-serif; font-size: 0.84rem; font-weight: 400; color: rgba(226,232,240,0.75); line-height: 1.5; padding: 0.7rem 0.9rem 0.7rem 1rem; border-radius: 9px; background: rgba(245,158,11,0.04); border-left: 2px solid rgba(245,158,11,0.35); margin-bottom: 0.45rem; }
 
-/* HISTORY */
 .hist-row { display: flex; align-items: center; gap: 0.7rem; padding: 0.55rem 0.8rem; border-radius: 8px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); margin-bottom: 0.4rem; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; }
 .hist-idx { color: rgba(226,232,240,0.2); width: 14px; }
 .hist-score { font-weight: 700; min-width: 40px; }
@@ -140,7 +95,6 @@ section[data-testid="stSidebar"] .block-container { padding: 1.5rem 0.9rem !impo
 .hist-trend { font-size: 0.8rem; min-width: 16px; text-align: right; }
 .hist-label { color: rgba(226,232,240,0.3); font-size: 0.68rem; min-width: 60px; text-align: right; }
 
-/* COMPARISON TABLE */
 .cmp-row { display: flex; align-items: center; gap: 0.6rem; padding: 0.55rem 0.8rem; border-radius: 8px; margin-bottom: 0.35rem; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); }
 .cmp-profile { font-family: 'Space Grotesk', sans-serif; font-size: 0.8rem; font-weight: 600; min-width: 130px; }
 .cmp-score   { font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; font-weight: 700; min-width: 44px; }
@@ -149,26 +103,15 @@ section[data-testid="stSidebar"] .block-container { padding: 1.5rem 0.9rem !impo
 .cmp-you     { background: rgba(0,212,255,0.08) !important; border-color: rgba(0,212,255,0.2) !important; }
 .cmp-you .cmp-profile { color: #00d4ff !important; }
 
-/* RULE BREAKDOWN */
 .rule-item { display: flex; align-items: flex-start; gap: 0.6rem; padding: 0.5rem 0.8rem; border-radius: 8px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); margin-bottom: 0.35rem; font-family: 'Space Grotesk', sans-serif; font-size: 0.8rem; color: rgba(226,232,240,0.65); line-height: 1.4; }
 .rule-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-top: 0.35rem; }
 
-/* TREND CHART */
-.trend-chart { width: 100%; padding: 0.5rem 0; }
+.section-label { font-family: 'JetBrains Mono', monospace; font-size: 0.63rem; font-weight: 500; color: rgba(0,212,255,0.55); letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 0.8rem; padding-bottom: 0.6rem; border-bottom: 1px solid rgba(0,212,255,0.1); }
 
-
-/* Make sidebar toggle button always visible */
-button[kind="header"] { visibility: visible !important; }
-[data-testid="collapsedControl"] { visibility: visible !important; display: block !important; }
-[data-testid="stSidebarNav"] { display: none; }
-section[data-testid="stSidebar"][aria-expanded="false"] { display: block !important; min-width: 280px !important; }
-
-/* SCROLLBAR */
 ::-webkit-scrollbar { width: 3px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(0,212,255,0.15); border-radius: 2px; }
 
-/* STREAMLIT OVERRIDES */
 .stSlider > div { padding-top: 0 !important; }
 .stDivider { border-color: rgba(255,255,255,0.05) !important; }
 .streamlit-expanderHeader { font-family: 'Space Grotesk', sans-serif !important; font-size: 0.82rem !important; color: rgba(226,232,240,0.35) !important; }
@@ -231,7 +174,7 @@ def gauge_svg(score, color, size=195):
     nx = cx + (r * 0.70) * math.cos(rad); ny = cy - (r * 0.70) * math.sin(rad)
     sw = int(size * 0.09); h = int(size * 0.66)
     ticks = "".join([
-        f'<line x1="{cx + (r+sw//2+2)*math.cos(math.radians(180-i*18)):.1f}" y1="{cy-(r+sw//2+2)*math.sin(math.radians(180-i*18)):.1f}" x2="{cx+(r+sw//2+6)*math.cos(math.radians(180-i*18)):.1f}" y2="{cy-(r+sw//2+6)*math.sin(math.radians(180-i*18)):.1f}" stroke="rgba(255,255,255,0.12)" stroke-width="1.2" stroke-linecap="round"/>'
+        f'<line x1="{cx + (r+sw//2+2)*math.cos(math.radians(180-i*18)):.1f}" y1="{cy-(r+sw//2+2)*math.sin(math.radians(180-i*18)):.1f}" x2="{cx+(r+sw//2+6)*math.cos(math.radians(180-i*18)):.1f}" y2="{cy-(r+sw//2+6)*math.sin(math.radians(180-i*18)):.1f}" stroke="#cbd5e1" stroke-width="1.2" stroke-linecap="round"/>'
         for i in range(11)])
     # Target zone indicator (>6.5 = green zone)
     tgt_rad1 = math.radians(180 - 6.5*18); tgt_rad2 = math.radians(180 - 10*18)
@@ -248,17 +191,17 @@ def gauge_svg(score, color, size=195):
       <stop offset="100%" style="stop-color:#22c55e"/>
     </linearGradient>
   </defs>
-  <path d="M {tx1},{ty1} A {r},{r} 0 0,1 {tx2},{ty2}" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="{sw}" stroke-linecap="round"/>
-  <path d="M {tx_1:.1f},{ty_1:.1f} A {r},{r} 0 0,1 {tx_2:.1f},{ty_2:.1f}" fill="none" stroke="rgba(34,197,94,0.12)" stroke-width="{sw}" stroke-linecap="butt"/>
-  <path d="M {tx1},{ty1} A {r},{r} 0 {laf},1 {ex:.1f},{ey:.1f}" fill="none" stroke="{color}" stroke-width="{sw}" stroke-linecap="round" opacity="0.92" filter="url(#g1)"/>
+  <path d="M {tx1},{ty1} A {r},{r} 0 0,1 {tx2},{ty2}" fill="none" stroke="#e2e8f0" stroke-width="{sw}" stroke-linecap="round"/>
+  <path d="M {tx_1:.1f},{ty_1:.1f} A {r},{r} 0 0,1 {tx_2:.1f},{ty_2:.1f}" fill="none" stroke="rgba(34,197,94,0.15)" stroke-width="{sw}" stroke-linecap="butt"/>
+  <path d="M {tx1},{ty1} A {r},{r} 0 {laf},1 {ex:.1f},{ey:.1f}" fill="none" stroke="{color}" stroke-width="{sw}" stroke-linecap="round" opacity="0.9"/>
   {ticks}
-  <line x1="{cx}" y1="{cy}" x2="{nx:.1f}" y2="{ny:.1f}" stroke="rgba(0,0,0,0.5)" stroke-width="{int(size*0.034)}" stroke-linecap="round"/>
-  <line x1="{cx}" y1="{cy}" x2="{nx:.1f}" y2="{ny:.1f}" stroke="white" stroke-width="{int(size*0.02)}" stroke-linecap="round" opacity="0.92"/>
-  <circle cx="{cx}" cy="{cy}" r="{int(size*0.048)}" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.25)" stroke-width="1.2"/>
-  <circle cx="{cx}" cy="{cy}" r="{int(size*0.022)}" fill="white" opacity="0.88"/>
-  <text x="{tx1-5}" y="{ty1+14}" fill="rgba(255,255,255,0.2)" font-size="9" font-family="JetBrains Mono,monospace">0</text>
-  <text x="{cx-4}" y="{cy-r-sw//2-8}" fill="rgba(255,255,255,0.2)" font-size="9" font-family="JetBrains Mono,monospace">5</text>
-  <text x="{tx2-12}" y="{ty2+14}" fill="rgba(255,255,255,0.2)" font-size="9" font-family="JetBrains Mono,monospace">10</text>
+  <line x1="{cx}" y1="{cy}" x2="{nx:.1f}" y2="{ny:.1f}" stroke="#e2e8f0" stroke-width="{int(size*0.034)}" stroke-linecap="round"/>
+  <line x1="{cx}" y1="{cy}" x2="{nx:.1f}" y2="{ny:.1f}" stroke="rgba(226,232,240,0.75)" stroke-width="{int(size*0.02)}" stroke-linecap="round" opacity="0.85"/>
+  <circle cx="{cx}" cy="{cy}" r="{int(size*0.048)}" fill="white" stroke="#e2e8f0" stroke-width="1.5"/>
+  <circle cx="{cx}" cy="{cy}" r="{int(size*0.022)}" fill="{color}" opacity="0.9"/>
+  <text x="{tx1-5}" y="{ty1+14}" fill="rgba(226,232,240,0.3)" font-size="9" font-family="JetBrains Mono,monospace">0</text>
+  <text x="{cx-4}" y="{cy-r-sw//2-8}" fill="rgba(226,232,240,0.3)" font-size="9" font-family="JetBrains Mono,monospace">5</text>
+  <text x="{tx2-12}" y="{ty2+14}" fill="rgba(226,232,240,0.3)" font-size="9" font-family="JetBrains Mono,monospace">10</text>
 </svg>"""
 
 def radar_svg(focus, sleep, overload, habit, size=230):
@@ -275,16 +218,16 @@ def radar_svg(focus, sleep, overload, habit, size=230):
             pts.append((cx+r_max*lvl*math.cos(rd), cy-r_max*lvl*math.sin(rd)))
         poly = " ".join(f"{x:.1f},{y:.1f}" for x,y in pts)
         op = 0.04 + lvl*0.05
-        grid += f'<polygon points="{poly}" fill="rgba(255,255,255,{op:.2f})" stroke="rgba(255,255,255,{op*2:.2f})" stroke-width="0.8"/>'
+        grid += f'<polygon points="{poly}" fill="rgba(99,102,241,{op:.2f})" stroke="rgba(99,102,241,{op*2:.2f})" stroke-width="0.8"/>'
     axes = ""
     for a in angles:
         rd = math.radians(a)
-        axes += f'<line x1="{cx:.1f}" y1="{cy:.1f}" x2="{cx+r_max*math.cos(rd):.1f}" y2="{cy-r_max*math.sin(rd):.1f}" stroke="rgba(255,255,255,0.07)" stroke-width="1"/>'
+        axes += f'<line x1="{cx:.1f}" y1="{cy:.1f}" x2="{cx+r_max*math.cos(rd):.1f}" y2="{cy-r_max*math.sin(rd):.1f}" stroke="#e2e8f0" stroke-width="1"/>'
     pts_d = []
     for val, a in zip(values, angles):
         rd = math.radians(a); pts_d.append((cx+r_max*val*math.cos(rd), cy-r_max*val*math.sin(rd)))
     poly_d = " ".join(f"{x:.1f},{y:.1f}" for x,y in pts_d)
-    data_shape = f'<polygon points="{poly_d}" fill="rgba(0,212,255,0.08)" stroke="rgba(0,212,255,0.55)" stroke-width="1.5"/>'
+    data_shape = f'<polygon points="{poly_d}" fill="rgba(99,102,241,0.08)" stroke="rgba(99,102,241,0.6)" stroke-width="1.8"/>'
     dots = ""; label_els = ""
     for (x,y),lbl,col,val,a in zip(pts_d,labels,clrs,values,angles):
         dots += f'<circle cx="{x:.1f}" cy="{y:.1f}" r="6" fill="{col}" opacity="0.12"/><circle cx="{x:.1f}" cy="{y:.1f}" r="3.5" fill="{col}" opacity="0.9"/>'
@@ -293,7 +236,7 @@ def radar_svg(focus, sleep, overload, habit, size=230):
         if a == 0: anchor,lx = "start",lx+2
         if a == 180: anchor,lx = "end",lx-2
         for i,line in enumerate(lbl.split("\n")):
-            label_els += f'<text x="{lx:.1f}" y="{ly+i*12:.1f}" fill="rgba(255,255,255,0.38)" font-size="10" font-family="Space Grotesk,sans-serif" text-anchor="{anchor}" font-weight="500">{line}</text>'
+            label_els += f'<text x="{lx:.1f}" y="{ly+i*12:.1f}" fill="rgba(99,102,241,0.38)" font-size="10" font-family="Inter,sans-serif" text-anchor="{anchor}" font-weight="500">{line}</text>'
         vx = cx+(r_max*val+18)*math.cos(rd); vy = cy-(r_max*val+18)*math.sin(rd)
         label_els += f'<text x="{vx:.1f}" y="{vy+4:.1f}" fill="{col}" font-size="11" font-weight="700" font-family="JetBrains Mono,monospace" text-anchor="middle">{val*10:.1f}</text>'
     return f"""<svg width="{size}" height="{size}" viewBox="0 0 {size} {size}" xmlns="http://www.w3.org/2000/svg">{grid}{axes}{data_shape}{dots}{label_els}</svg>"""
@@ -514,7 +457,7 @@ with r3a:
         st.markdown('''
         <div class="card card-glow-green">
             <div class="card-label">Session History</div>
-            <div style="text-align:center;padding:2rem 0;font-family:Space Grotesk,sans-serif;font-size:0.85rem;color:rgba(226,232,240,0.2)">
+            <div style="text-align:center;padding:2rem 0;font-family:Space Grotesk,sans-serif;font-size:0.85rem;color:rgba(226,232,240,0.3)">
                 <div style="font-size:2rem;margin-bottom:0.5rem">📸</div>
                 No readings saved yet.<br>Use the sidebar button to save this reading.
             </div>
@@ -538,7 +481,7 @@ with r3b:
         <div class="card-label">Profile Comparison</div>
         <div style="font-family:Space Grotesk,sans-serif;font-size:0.78rem;color:rgba(226,232,240,0.3);margin-bottom:0.7rem">HabitBalance ranked against all 4 archetypes</div>
         {rows}
-        <div style="font-family:JetBrains Mono,monospace;font-size:0.6rem;color:rgba(0,212,255,0.4);margin-top:0.7rem;letter-spacing:0.08em">◈ your score highlighted in cyan</div>
+        <div style="font-family:JetBrains Mono,monospace;font-size:0.6rem;color:rgba(0,212,255,0.55);margin-top:0.7rem;letter-spacing:0.08em">◈ your score highlighted</div>
     </div>
     ''', unsafe_allow_html=True)
 
@@ -578,9 +521,60 @@ with r3c:
         <div class="card-label">Active Fuzzy Rules</div>
         <div style="font-family:Space Grotesk,sans-serif;font-size:0.78rem;color:rgba(226,232,240,0.3);margin-bottom:0.7rem">Rules currently firing based on your inputs</div>
         {rules_html}
-        <div style="font-family:JetBrains Mono,monospace;font-size:0.6rem;color:rgba(226,232,240,0.2);margin-top:0.6rem;letter-spacing:0.06em">FQ = FocusQuality · SQ = SleepQuality · DO = DigitalOverload</div>
+        <div style="font-family:JetBrains Mono,monospace;font-size:0.6rem;color:rgba(226,232,240,0.3);margin-top:0.6rem;letter-spacing:0.06em">FQ = FocusQuality · SQ = SleepQuality · DO = DigitalOverload</div>
     </div>
     ''', unsafe_allow_html=True)
+
+# ============================================================
+# MEMBERSHIP FUNCTION VISUALISATION
+# ============================================================
+st.markdown('<div style="height:0.5rem"></div>', unsafe_allow_html=True)
+st.markdown("""
+<div style="font-family:'JetBrains Mono',monospace;font-size:0.63rem;font-weight:500;
+color:rgba(0,212,255,0.55);letter-spacing:0.2em;text-transform:uppercase;
+margin-bottom:0.8rem;padding-bottom:0.6rem;border-bottom:1px solid rgba(0,212,255,0.1)">
+◈ fuzzy reasoning — membership functions
+</div>""", unsafe_allow_html=True)
+
+try:
+    from mf_viz import make_input_mf_figure, make_output_mf_figure, make_hierarchy_figure
+
+    with st.expander("↗ Input membership functions — where do your values fall?", expanded=True):
+        st.markdown(
+            "<p style='font-size:0.78rem;color:rgba(226,232,240,0.45);margin-bottom:0.6rem'>"
+            "The dashed cyan line shows your current input value inside each membership function. "
+            "Where it lands determines the fuzzy label (Low / Medium / High) and with what degree (0–1)."
+            "</p>", unsafe_allow_html=True)
+        fig_in = make_input_mf_figure(
+            vals["ScreenGlances"], vals["IdleChecking"],
+            vals["LateNightUse"], vals["SocialMediaUsage"]
+        )
+        st.pyplot(fig_in, use_container_width=True)
+        plt.close(fig_in)
+
+    with st.expander("↗ Output membership functions — how are scores computed?", expanded=True):
+        st.markdown(
+            "<p style='font-size:0.78rem;color:rgba(226,232,240,0.45);margin-bottom:0.6rem'>"
+            "After inference, the fuzzy output sets are <b>defuzzified via centroid</b> to produce crisp scores. "
+            "HabitBalance is produced by the <b>4th Mamdani FIS</b> — not a formula."
+            "</p>", unsafe_allow_html=True)
+        fig_out = make_output_mf_figure(
+            o["FocusQuality"], o["SleepQuality"],
+            o["DigitalOverload"], o["HabitBalance"]
+        )
+        st.pyplot(fig_out, use_container_width=True)
+        plt.close(fig_out)
+
+    with st.expander("↗ Hierarchical FIS — all outputs at a glance"):
+        fig_h = make_hierarchy_figure(
+            o["FocusQuality"], o["SleepQuality"],
+            o["DigitalOverload"], o["HabitBalance"]
+        )
+        st.pyplot(fig_h, use_container_width=True)
+        plt.close(fig_h)
+
+except Exception as e:
+    st.warning(f"MF visualisation unavailable: {e}")
 
 # ============================================================
 # EXPANDERS
@@ -591,18 +585,140 @@ col_e1, col_e2 = st.columns(2)
 with col_e1:
     with st.expander("↗ System explanation"):
         st.markdown("""
-**fuzzy-detox** uses a two-subsystem Mamdani Fuzzy Inference System.
+**fuzzy-detox** uses a **hierarchical Mamdani Fuzzy Inference System** with two layers.
 
-**Subsystem 1** fuzzifies the 4 raw inputs (Low / Medium / High), applies IF-THEN rules, and produces 3 crisp outputs via Centroid defuzzification.
+**Layer 1 — three parallel FIS**
+Each fuzzifies the 4 raw inputs (Low / Medium / High), applies IF-THEN rules, and produces one crisp output via centroid defuzzification:
+- FIS-1 → FocusQuality (0–10)
+- FIS-2 → SleepQuality (0–10)
+- FIS-3 → DigitalOverload (0–10)
 
-**Subsystem 2** aggregates the intermediates:
-```
-HabitBalance = 0.4 × FocusQuality
-             + 0.4 × SleepQuality
-             + 0.2 × (10 − DigitalOverload)
-```
-All membership functions are grounded in literature.""")
+**Layer 2 — 4th Mamdani FIS (HabitBalance)**
+The three intermediate scores are re-injected as inputs into a dedicated FIS with **27 IF-THEN rules** and centroid defuzzification.
+HabitBalance is produced end-to-end by fuzzy inference — not a crisp formula.
+
+> *"Hierarchical fuzzy systems allow complex problems to be decomposed into simpler sub-problems while preserving fuzziness throughout."*
+> — Mendel, J.M. (2001). Uncertain Rule-Based Fuzzy Systems.
+
+All membership functions are grounded in peer-reviewed literature (Kushlev et al., 2015; Christensen et al., 2016; Digital Wellness Institute, 2024).""")
 
 with col_e2:
     with st.expander("↗ Raw fuzzy result (JSON)"):
         st.json(result)
+
+# ============================================================
+# FUZZY vs CRISP COMPARISON
+# ============================================================
+st.markdown('<div style="height:0.5rem"></div>', unsafe_allow_html=True)
+st.markdown("""
+<div style="font-family:'JetBrains Mono',monospace;font-size:0.63rem;font-weight:500;
+color:rgba(0,212,255,0.55);letter-spacing:0.2em;text-transform:uppercase;
+margin-bottom:0.8rem;padding-bottom:0.6rem;border-bottom:1px solid rgba(0,212,255,0.1)">
+◈ evaluation — fuzzy vs crisp comparison
+</div>""", unsafe_allow_html=True)
+
+try:
+    from comparison_viz import (make_sweep_figure, make_threshold_demo_figure,
+                                 make_profile_comparison_figure)
+    from crisp_engine import evaluate_crisp_system
+
+    cr = evaluate_crisp_system(
+        vals["ScreenGlances"], vals["IdleChecking"],
+        vals["LateNightUse"],  vals["SocialMediaUsage"]
+    )
+
+    # Live side-by-side for current inputs
+    diff = round(o["HabitBalance"] - cr["outputs"]["HabitBalance"], 2)
+    diff_color = "#34d399" if abs(diff) < 0.5 else "#fbbf24" if abs(diff) < 1.5 else "#f87171"
+    st.markdown(f"""
+    <div style="display:flex;gap:12px;margin-bottom:0.8rem">
+      <div style="flex:1;padding:0.9rem 1.2rem;background:rgba(0,212,255,0.06);
+           border:1px solid rgba(0,212,255,0.2);border-radius:12px;text-align:center">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:0.6rem;
+             color:rgba(0,212,255,0.55);letter-spacing:0.15em;margin-bottom:4px">FUZZY SYSTEM</div>
+        <div style="font-size:2rem;font-weight:800;color:#00d4ff">{o["HabitBalance"]}</div>
+        <div style="font-size:0.75rem;color:rgba(226,232,240,0.45)">HabitBalance</div>
+      </div>
+      <div style="flex:1;padding:0.9rem 1.2rem;background:rgba(248,113,113,0.06);
+           border:1px solid rgba(248,113,113,0.2);border-radius:12px;text-align:center">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:0.6rem;
+             color:rgba(248,113,113,0.6);letter-spacing:0.15em;margin-bottom:4px">CRISP SYSTEM</div>
+        <div style="font-size:2rem;font-weight:800;color:#f87171">{cr["outputs"]["HabitBalance"]}</div>
+        <div style="font-size:0.75rem;color:rgba(226,232,240,0.45)">HabitBalance</div>
+      </div>
+      <div style="flex:1;padding:0.9rem 1.2rem;background:rgba(255,255,255,0.02);
+           border:1px solid rgba(255,255,255,0.05);border-radius:12px;text-align:center">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:0.6rem;
+             color:{diff_color};letter-spacing:0.15em;margin-bottom:4px">DIFFERENCE</div>
+        <div style="font-size:2rem;font-weight:800;color:{diff_color}">{diff:+.2f}</div>
+        <div style="font-size:0.75rem;color:rgba(226,232,240,0.45)">Fuzzy − Crisp</div>
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    with st.expander("↗ The threshold problem — why fuzzy matters"):
+        st.markdown(
+            "<p style='font-size:0.78rem;color:rgba(226,232,240,0.45)'>"
+            "A crisp system uses hard thresholds: 1 extra glance can drop your score by 1.5 points. "
+            "The fuzzy system transitions smoothly — more realistic and less arbitrary."
+            "</p>", unsafe_allow_html=True)
+        fig_t = make_threshold_demo_figure()
+        st.pyplot(fig_t, use_container_width=True)
+        plt.close(fig_t)
+
+    with st.expander("↗ Full sweep — all 4 outputs across ScreenGlances range"):
+        fig_s = make_sweep_figure()
+        st.pyplot(fig_s, use_container_width=True)
+        plt.close(fig_s)
+
+    with st.expander("↗ 5 user profiles compared"):
+        fig_p = make_profile_comparison_figure()
+        st.pyplot(fig_p, use_container_width=True)
+        plt.close(fig_p)
+
+except Exception as e:
+    st.warning(f"Comparison section unavailable: {e}")
+
+# ============================================================
+# SENSITIVITY ANALYSIS
+# ============================================================
+st.markdown('<div style="height:0.5rem"></div>', unsafe_allow_html=True)
+st.markdown("""
+<div class="section-label">◈ sensitivity analysis</div>
+""", unsafe_allow_html=True)
+
+try:
+    from sensitivity import make_sensitivity_figures, sensitivity_range, INPUT_NAMES, SHORT
+
+    with st.expander("↗ Which input influences HabitBalance the most?", expanded=False):
+        st.markdown(
+            "<p style='font-size:0.82rem;color:rgba(226,232,240,0.45);margin-bottom:0.8rem'>"
+            "Each input is swept across its full range while others are fixed at ideal values. "
+            "The chart shows how much HabitBalance drops — larger range = more influential variable."
+            "</p>", unsafe_allow_html=True)
+
+        fig_s1, fig_s2, all_ranges = make_sensitivity_figures()
+
+        # Quick summary badges
+        hb_r = {iname: all_ranges[iname]["HabitBalance"] for iname in INPUT_NAMES}
+        sorted_sens = sorted(hb_r.items(), key=lambda x: x[1], reverse=True)
+        badges = ""
+        colors = ["#6366f1","#0ea5e9","#f59e0b","#10b981"]
+        for rank, (iname, val) in enumerate(sorted_sens):
+            col = colors[rank]
+            name = SHORT[INPUT_NAMES.index(iname)]
+            badges += f"""<span style="display:inline-flex;align-items:center;gap:5px;
+                padding:4px 12px;border-radius:999px;margin:3px;font-size:0.75rem;
+                font-weight:600;background:{col}18;color:{col};border:1px solid {col}40">
+                #{rank+1} {name} ({val:.2f} pts)</span>"""
+        st.markdown(f'<div style="margin-bottom:1rem">{badges}</div>', unsafe_allow_html=True)
+
+        st.pyplot(fig_s2, use_container_width=True)
+        plt.close(fig_s2)
+
+    with st.expander("↗ Full response curves — all 4 outputs"):
+        st.pyplot(fig_s1, use_container_width=True)
+        plt.close(fig_s1)
+
+except Exception as e:
+    st.warning(f"Sensitivity analysis unavailable: {e}")
