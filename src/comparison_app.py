@@ -10,7 +10,7 @@ Run with:
 
 import pandas as pd
 import streamlit as st
-from fuzzy_engine import evaluate_fuzzy_system
+from fuzzy_engine_v4 import evaluate_fuzzy_system
 from crisp_engine import evaluate_crisp_system
 
 st.set_page_config(
