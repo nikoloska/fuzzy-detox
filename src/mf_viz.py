@@ -41,11 +41,12 @@ def _ax_mf(ax, universe, mfs: dict, current_val: float | None = None,
            xlabel: str = "", title: str = ""):
     """Draw one MF panel."""
     color_map = {
-        "very_low":  VLOW_C,
-        "low":       LOW_C,
-        "medium":    MED_C,
-        "high":      HIGH_C,
-        "very_high": "#00d4ff",
+        "very_low":   VLOW_C,
+        "low":        LOW_C,
+        "medium":     MED_C,
+        "medium_high":"#34d399",
+        "high":       HIGH_C,
+        "very_high":  "#00d4ff",
     }
     for label, mf_vals in mfs.items():
         color = color_map.get(label, "#a78bfa")
@@ -85,9 +86,9 @@ def make_input_mf_figure(sg: float, ic: float, ln: float, sm: float):
     # ScreenGlances 0–150
     u_sg = np.arange(0, 151, 1)
     mfs_sg = {
-        "low":    fuzz.trapmf(u_sg, [0,  0,  25, 55]),
-        "medium": fuzz.trimf (u_sg, [40, 75, 110]),
-        "high":   fuzz.trapmf(u_sg, [90, 120, 150, 150]),
+        "low":    fuzz.trapmf(u_sg, [0,  0,  20, 40]),
+        "medium": fuzz.trimf (u_sg, [20, 50, 90]),
+        "high":   fuzz.trapmf(u_sg, [65, 90, 150, 150]),
     }
     ax = fig.add_subplot(gs[0, 0])
     _ax_mf(ax, u_sg, mfs_sg, sg, "glances / day", "ScreenGlances")
@@ -97,17 +98,17 @@ def make_input_mf_figure(sg: float, ic: float, ln: float, sm: float):
     mfs_ic = {
         "low":    fuzz.trapmf(u_ic, [0,  0,  10, 25]),
         "medium": fuzz.trimf (u_ic, [18, 35, 52]),
-        "high":   fuzz.trapmf(u_ic, [42, 58, 80, 80]),
+        "high":   fuzz.trapmf(u_ic, [42, 58, 80, 85]),
     }
     ax = fig.add_subplot(gs[0, 1])
     _ax_mf(ax, u_ic, mfs_ic, ic, "idle checks / day", "IdleChecking")
 
-    # LateNightUse 0–180
-    u_ln = np.arange(0, 181, 1)
+    # LateNightUse 0–120
+    u_ln = np.arange(0, 121, 1)
     mfs_ln = {
-        "low":    fuzz.trapmf(u_ln, [0,   0,   20,  50]),
-        "medium": fuzz.trimf (u_ln, [35,  70, 110]),
-        "high":   fuzz.trapmf(u_ln, [90, 125, 180, 180]),
+        "low":    fuzz.trapmf(u_ln, [0,   0,   15,  30]),
+        "medium": fuzz.trimf (u_ln, [15,  30,  60]),
+        "high":   fuzz.trapmf(u_ln, [31,  60, 120, 120]),
     }
     ax = fig.add_subplot(gs[1, 0])
     _ax_mf(ax, u_ln, mfs_ln, ln, "min after 22:00", "LateNightUse")
@@ -115,9 +116,9 @@ def make_input_mf_figure(sg: float, ic: float, ln: float, sm: float):
     # SocialMediaUsage 0–100
     u_sm = np.arange(0, 101, 1)
     mfs_sm = {
-        "low":    fuzz.trapmf(u_sm, [0,  0,  15, 35]),
-        "medium": fuzz.trimf (u_sm, [25, 45, 65]),
-        "high":   fuzz.trapmf(u_sm, [55, 75, 100, 100]),
+        "low":    fuzz.trapmf(u_sm, [0,  0,  10, 25]),
+        "medium": fuzz.trimf (u_sm, [15, 30, 55]),
+        "high":   fuzz.trapmf(u_sm, [40, 70, 100, 100]),
     }
     ax = fig.add_subplot(gs[1, 1])
     _ax_mf(ax, u_sm, mfs_sm, sm, "% of screen time", "SocialMediaUsage")
@@ -126,79 +127,41 @@ def make_input_mf_figure(sg: float, ic: float, ln: float, sm: float):
 
 
 def make_output_mf_figure(focus: float, sleep: float, overload: float, habit: float):
-    """Figure: 4 output MFs with defuzzified values marked."""
-
+    """
+    Output MF figure — imports MFs directly from fuzzy_engine_v4.
+    This guarantees pixel-perfect consistency: if the engine MFs change,
+    the visualisation updates automatically with zero drift.
+    """
     from fuzzy_engine import (
-        focus_quality,
-        sleep_quality,
-        digital_overload,
-        habit_balance_out,
+        focus_quality, sleep_quality, digital_overload, habit_balance_out
     )
-
-    def mfs_from_variable(variable):
-        return {
-            label: term.mf
-            for label, term in variable.terms.items()
-        }
 
     fig = plt.figure(figsize=(11, 5.5), facecolor=BG)
-    fig.suptitle(
-        "Output Membership Functions - defuzzified values marked (──)",
-        fontsize=9,
-        color=TITLE,
-        y=0.98,
-        fontweight="bold",
-    )
+    fig.suptitle("Output Membership Functions — defuzzified values marked (──)",
+                 fontsize=9, color=TITLE, y=0.98, fontweight="bold")
 
-    gs = GridSpec(
-        2, 2,
-        figure=fig,
-        hspace=0.55,
-        wspace=0.38,
-        left=0.07,
-        right=0.97,
-        top=0.90,
-        bottom=0.08,
-    )
+    gs = GridSpec(2, 2, figure=fig, hspace=0.55, wspace=0.38,
+                  left=0.07, right=0.97, top=0.90, bottom=0.08)
 
-    panels = [
-        (
-            focus_quality.universe,
-            mfs_from_variable(focus_quality),
-            focus,
-            "score (0-10)",
-            "FocusQuality",
-            gs[0, 0],
-        ),
-        (
-            sleep_quality.universe,
-            mfs_from_variable(sleep_quality),
-            sleep,
-            "score (0-10)",
-            "SleepQuality",
-            gs[0, 1],
-        ),
-        (
-            digital_overload.universe,
-            mfs_from_variable(digital_overload),
-            overload,
-            "score (0-10)",
-            "DigitalOverload",
-            gs[1, 0],
-        ),
-        (
-            habit_balance_out.universe,
-            mfs_from_variable(habit_balance_out),
-            habit,
-            "score (0-10)",
-            "HabitBalance ← 4th Mamdani FIS",
-            gs[1, 1],
-        ),
-    ]
+    def var_to_mfs(var):
+        """Extract {term: mf_array} dict from a skfuzzy Consequent."""
+        return {name: term.mf for name, term in var.terms.items()}
 
-    for universe, mfs, current_value, xlabel, title, position in panels:
-        ax = fig.add_subplot(position)
-        _ax_mf(ax, universe, mfs, current_value, xlabel, title)
+    u = var_to_mfs(focus_quality)  # use engine universe
+    universe = focus_quality.universe
+
+    ax = fig.add_subplot(gs[0, 0])
+    _ax_mf(ax, universe, var_to_mfs(focus_quality),    focus,   "score (0–10)", "FocusQuality")
+
+    ax = fig.add_subplot(gs[0, 1])
+    _ax_mf(ax, universe, var_to_mfs(sleep_quality),    sleep,   "score (0–10)", "SleepQuality")
+
+    ax = fig.add_subplot(gs[1, 0])
+    _ax_mf(ax, universe, var_to_mfs(digital_overload), overload,"score (0–10)", "DigitalOverload")
+
+    ax = fig.add_subplot(gs[1, 1])
+    _ax_mf(ax, universe, var_to_mfs(habit_balance_out),habit,   "score (0–10)",
+           "HabitBalance  ← 4th Mamdani FIS")
 
     return fig
 
@@ -211,11 +174,24 @@ def make_hierarchy_figure(focus: float, sleep: float,
 
     labels = ["FocusQuality", "SleepQuality", "DigitalOverload", "HabitBalance ★"]
     values = [focus, sleep, overload, habit]
+    from fuzzy_engine import _label_from_mf, focus_quality, digital_overload as do_var
+    def _bar_color(val, invert=False):
+        lbl = _label_from_mf(val, focus_quality)
+        tier = {"High":"good","Medium High":"good","Medium":"med",
+                "Low":"poor","Very Low":"poor"}.get(lbl,"med")
+        if invert:
+            tier = {"good":"poor","med":"med","poor":"good"}[tier]
+        return {
+            "good": LOW_C,
+            "med":  MED_C,
+            "poor": HIGH_C,
+        }[tier]
+
     colors = [
-        LOW_C  if focus   >= 6 else MED_C if focus   >= 4 else HIGH_C,
-        LOW_C  if sleep   >= 6 else MED_C if sleep   >= 4 else HIGH_C,
-        HIGH_C if overload>= 6 else MED_C if overload>= 4 else LOW_C,
-        LOW_C  if habit   >= 6 else MED_C if habit   >= 4 else HIGH_C,
+        _bar_color(focus),
+        _bar_color(sleep),
+        _bar_color(overload, invert=True),
+        _bar_color(habit),
     ]
 
     bars = ax.barh(labels, values, color=colors, height=0.45,

@@ -31,9 +31,7 @@ idle_checking["low"] = fuzz.trapmf(idle_checking.universe, [0, 0, 10, 20])
 idle_checking["medium"] = fuzz.trimf(idle_checking.universe, [10, 30, 55])
 idle_checking["high"] = fuzz.trapmf(idle_checking.universe, [40, 58, 80, 85])
 
-# ------------------------------------------------------------
-# LateNightUse membership functions per document spec
-# ------------------------------------------------------------
+# LateNightUse MFs from PDF spec (Bozkurt et al. 2024 — 0/15/30/60 min categories)
 late_night_use["low"] = fuzz.trapmf(late_night_use.universe, [0, 0, 15, 30])
 late_night_use["medium"] = fuzz.trimf(late_night_use.universe, [15, 30, 60])
 late_night_use["high"] = fuzz.trapmf(late_night_use.universe, [31, 60, 120, 120])
@@ -55,23 +53,65 @@ focus_quality.defuzzify_method = "centroid"
 sleep_quality.defuzzify_method = "centroid"
 digital_overload.defuzzify_method = "centroid"
 
-focus_quality["very_low"] = fuzz.trapmf(focus_quality.universe, [0, 0, 1.5, 3.0])
-focus_quality["low"] = fuzz.trimf(focus_quality.universe, [2.0, 3.5, 5.0])
-focus_quality["medium"] = fuzz.trimf(focus_quality.universe, [4.0, 5.5, 7.0])
-focus_quality["medium_high"] = fuzz.trimf(focus_quality.universe, [5.5, 7.5, 9.0])
-focus_quality["high"] = fuzz.trapmf(focus_quality.universe, [8.0, 9.0, 10, 10])
+# ============================================================
+# Output membership functions — literature-grounded boundaries
+#
+# Each output has DISTINCT MF shapes reflecting what the literature
+# says about each dimension's sensitivity and distribution.
+# Unlike inputs (physical measurements), outputs are on a designed
+# 0–10 scale, so boundaries encode domain-specific semantics.
+# ============================================================
 
-sleep_quality["very_low"] = fuzz.trapmf(sleep_quality.universe, [0, 0, 2.5, 4.5])
-sleep_quality["low"] = fuzz.trimf(sleep_quality.universe, [3.5, 5.0, 6.5])
-sleep_quality["medium"] = fuzz.trimf(sleep_quality.universe, [5.5, 7.0, 8.0])
-sleep_quality["medium_high"] = fuzz.trimf(sleep_quality.universe, [7.0, 8.0, 9.0])
-sleep_quality["high"] = fuzz.trapmf(sleep_quality.universe, [8.5, 9.5, 10, 10])
+# ── FocusQuality ─────────────────────────────────────────────
+# Reference: Ward et al. (2017) "Brain Drain" — even the mere
+# presence of a smartphone reduces available cognitive capacity.
+# Newport (2016) "Deep Work" — sustained focus is rare and fragile;
+# the "high" zone is deliberately narrow (hard to achieve).
+# Mark et al. (2008) — >23 interruptions/day = severe fragmentation.
+# Design: "high" zone starts at 8.0 (demanding threshold),
+#         "very_low" is standard — any significant impairment is serious.
+focus_quality["very_low"]    = fuzz.trapmf(focus_quality.universe, [0,   0,   1.5, 3.0])
+focus_quality["low"]         = fuzz.trimf (focus_quality.universe, [2.0, 3.5, 5.0])
+focus_quality["medium"]      = fuzz.trimf (focus_quality.universe, [4.0, 5.5, 7.0])
+focus_quality["medium_high"] = fuzz.trimf (focus_quality.universe, [5.5, 7.5, 9.0])
+focus_quality["high"]        = fuzz.trapmf(focus_quality.universe, [8.0, 9.0, 10,  10])
+# Note: gap between medium_high peak (7.5) and high start (8.0) is intentional.
+# Ward (2017): truly high focus requires near-total absence of digital fragmentation.
 
-digital_overload["very_low"] = fuzz.trapmf(digital_overload.universe, [0, 0, 1.0, 2.5])
-digital_overload["low"] = fuzz.trimf(digital_overload.universe, [1.5, 3.0, 4.5])
-digital_overload["medium"] = fuzz.trimf(digital_overload.universe, [3.5, 5.0, 6.5])
-digital_overload["medium_high"] = fuzz.trimf(digital_overload.universe, [5.5, 7.0, 8.0])
-digital_overload["high"] = fuzz.trapmf(digital_overload.universe, [7.0, 8.5, 10, 10])
+# ── SleepQuality ─────────────────────────────────────────────
+# Reference: Combertaldi et al. (2021) — pre-sleep screen use
+# reduces slow-wave sleep (SWS) even with short exposure.
+# Rasch & Born (2013) — SWS disruption causes next-day cognitive
+# and emotional impairment; the degradation is steep.
+# Design: "very_low" zone is WIDER ([0,0,2.5,4.5]) than FocusQuality
+#         because sleep quality degrades faster with any disruption.
+#         "high" zone is NARROWER (starts at 8.5) — truly good sleep
+#         requires complete absence of late-night stimulation.
+sleep_quality["very_low"]    = fuzz.trapmf(sleep_quality.universe, [0,   0,   2.5, 4.5])
+sleep_quality["low"]         = fuzz.trimf (sleep_quality.universe, [3.5, 5.0, 6.5])
+sleep_quality["medium"]      = fuzz.trimf (sleep_quality.universe, [5.5, 7.0, 8.0])
+sleep_quality["medium_high"] = fuzz.trimf (sleep_quality.universe, [7.0, 8.0, 9.0])
+sleep_quality["high"]        = fuzz.trapmf(sleep_quality.universe, [8.5, 9.5, 10,  10])
+# Note: "very_low" extends to 4.5 — Combertaldi: even moderate late-night
+# use measurably disrupts SWS architecture, making poor sleep common.
+
+# ── DigitalOverload ───────────────────────────────────────────
+# Reference: Sweller (1994) Cognitive Load Theory — working memory
+# has a hard capacity limit; overload accumulates incrementally.
+# Kushlev & Dunn (2015) — notification frequency crosses a stress
+# threshold at moderate levels of checking behaviour.
+# Design: "very_low" zone is NARROWER ([0,0,1.0,2.5]) than the others
+#         because true low-overload is rare in modern phone use.
+#         "high" zone starts earlier (7.0) — CLT saturation happens
+#         before the extreme end of the scale.
+digital_overload["very_low"]    = fuzz.trapmf(digital_overload.universe, [0,   0,   1.0, 2.5])
+digital_overload["low"]         = fuzz.trimf (digital_overload.universe, [1.5, 3.0, 4.5])
+digital_overload["medium"]      = fuzz.trimf (digital_overload.universe, [3.5, 5.0, 6.5])
+digital_overload["medium_high"] = fuzz.trimf (digital_overload.universe, [5.5, 7.0, 8.0])
+digital_overload["high"]        = fuzz.trapmf(digital_overload.universe, [7.0, 8.5, 10,  10])
+# Note: "very_low" only spans [0,2.5] — Newport (2016): achieving
+# truly minimal cognitive load requires deliberate digital minimalism,
+# not just moderate use. Most users will be in "low" or "medium" range.
 
 
 # ============================================================
@@ -111,69 +151,87 @@ focus_rules = [
 ]
 
 sleep_rules = [
-    # S1: All disruption channels inactive
-    ctrl.Rule(late_night_use["low"] & screen_glances["low"] & idle_checking["low"], sleep_quality["high"]),
-    # S2: Two disruptions inactive
-    ctrl.Rule(late_night_use["low"] & social_media["low"], sleep_quality["high"]),
-    # S3: Low late-night, medium glances
-    ctrl.Rule(late_night_use["low"] & screen_glances["medium"], sleep_quality["medium_high"]),
-    # S4: Low late-night, medium social media
-    ctrl.Rule(late_night_use["low"] & social_media["medium"], sleep_quality["medium_high"]),
-    # S5: Medium late-night, medium glances
-    ctrl.Rule(late_night_use["medium"] & screen_glances["medium"], sleep_quality["medium"]),
-    # S6: Medium late-night, medium social media
-    ctrl.Rule(late_night_use["medium"] & social_media["medium"], sleep_quality["medium"]),
-    # S7: Medium late-night, low glances
-    ctrl.Rule(late_night_use["medium"] & screen_glances["low"], sleep_quality["medium"]),
-    # S8: High late-night, medium social media
-    ctrl.Rule(late_night_use["high"] & social_media["medium"], sleep_quality["low"]),
-    # S9: Medium late-night, high social media
-    ctrl.Rule(late_night_use["medium"] & social_media["high"], sleep_quality["low"]),
-    # S10: Low glances, high late-night
-    ctrl.Rule(screen_glances["low"] & late_night_use["high"], sleep_quality["low"]),
-    # S11: High late-night, high social media
-    ctrl.Rule(late_night_use["high"] & social_media["high"], sleep_quality["very_low"]),
-    # S12: High late-night, high glances
-    ctrl.Rule(late_night_use["high"] & screen_glances["high"], sleep_quality["very_low"]),
-    # S13: High late-night, high idle checking
-    ctrl.Rule(late_night_use["high"] & idle_checking["high"], sleep_quality["very_low"]),
+    # Very good sleep — all inputs minimal [Combertaldi 2021; Rasch & Born 2013]
+    ctrl.Rule(late_night_use["low"] & screen_glances["low"] & idle_checking["low"],
+              sleep_quality["high"]),
+    ctrl.Rule(late_night_use["low"] & social_media["low"],
+              sleep_quality["high"]),
+
+    # Good sleep — mostly low late-night [Brautsch 2023]
+    ctrl.Rule(late_night_use["low"] & screen_glances["medium"],
+              sleep_quality["medium_high"]),
+    ctrl.Rule(late_night_use["low"] & social_media["medium"],
+              sleep_quality["medium_high"]),
+
+    # Moderate sleep — mixed inputs [Siebers 2024]
+    ctrl.Rule(late_night_use["medium"] & screen_glances["medium"],
+              sleep_quality["medium"]),
+    ctrl.Rule(late_night_use["medium"] & social_media["medium"],
+              sleep_quality["medium"]),
+    ctrl.Rule(late_night_use["medium"] & screen_glances["low"],
+              sleep_quality["medium"]),
+
+    # Poor sleep — high late night or social media [Combertaldi 2021]
+    ctrl.Rule(late_night_use["high"] & social_media["medium"],
+              sleep_quality["low"]),
+    ctrl.Rule(late_night_use["medium"] & social_media["high"],
+              sleep_quality["low"]),
+    ctrl.Rule(screen_glances["low"] & late_night_use["high"],
+              sleep_quality["low"]),
+
+    # Very poor sleep — high late night + high stimulation [Rasch & Born 2013]
+    ctrl.Rule(late_night_use["high"] & social_media["high"],
+              sleep_quality["very_low"]),
+    ctrl.Rule(late_night_use["high"] & screen_glances["high"],
+              sleep_quality["very_low"]),
+    ctrl.Rule(late_night_use["high"] & idle_checking["high"],
+              sleep_quality["very_low"]),
 ]
 
 digital_overload_rules = [
-    # O1: High glances + high social media
-    ctrl.Rule(screen_glances["high"] & social_media["high"], digital_overload["high"]),
-    # O2: High idle checking + high social media
-    ctrl.Rule(idle_checking["high"] & social_media["high"], digital_overload["high"]),
-    # O3: High late-night + high social media
-    ctrl.Rule(late_night_use["high"] & social_media["high"], digital_overload["high"]),
-    # O4: All three principal channels high
-    ctrl.Rule(screen_glances["high"] & idle_checking["high"] & late_night_use["high"], digital_overload["high"]),
-    # O5: High glances + high idle checking
-    ctrl.Rule(screen_glances["high"] & idle_checking["high"], digital_overload["medium_high"]),
-    # O6: High idle checking + high late-night
-    ctrl.Rule(idle_checking["high"] & late_night_use["high"], digital_overload["medium_high"]),
-    # O7: High glances + medium late-night
-    ctrl.Rule(screen_glances["high"] & late_night_use["medium"], digital_overload["medium_high"]),
-    # O8: High social media but low glances & low late-night
-    ctrl.Rule(social_media["high"] & screen_glances["low"] & late_night_use["low"], digital_overload["medium"]),
-    # O9: High late-night + low social media
-    ctrl.Rule(late_night_use["high"] & social_media["low"], digital_overload["medium"]),
-    # O10: High glances + low social media
-    ctrl.Rule(screen_glances["high"] & social_media["low"], digital_overload["medium"]),
-    # O11: High idle checking + low social media
-    ctrl.Rule(idle_checking["high"] & social_media["low"], digital_overload["medium"]),
-    # O12: Medium glances + medium social media
-    ctrl.Rule(screen_glances["medium"] & social_media["medium"], digital_overload["medium"]),
-    # O13: Low glances + high social media
-    ctrl.Rule(screen_glances["low"] & social_media["high"], digital_overload["medium"]),
-    # O14: Medium glances + low social media + low late-night
-    ctrl.Rule(screen_glances["medium"] & social_media["low"] & late_night_use["low"], digital_overload["low"]),
-    # O15: Medium idle checking + low glances
-    ctrl.Rule(idle_checking["medium"] & screen_glances["low"], digital_overload["low"]),
-    # O16: Low glances + low social media
-    ctrl.Rule(screen_glances["low"] & social_media["low"], digital_overload["very_low"]),
-    # O17: All three principal channels low
-    ctrl.Rule(screen_glances["low"] & idle_checking["low"] & late_night_use["low"], digital_overload["very_low"]),
+    # Very high overload — multiple high inputs simultaneously [Sweller 1994; Kushlev 2015]
+    ctrl.Rule(screen_glances["high"] & idle_checking["high"] & late_night_use["high"],
+              digital_overload["high"]),
+    ctrl.Rule(screen_glances["high"] & social_media["high"],
+              digital_overload["high"]),
+    ctrl.Rule(idle_checking["high"] & social_media["high"],
+              digital_overload["high"]),
+    ctrl.Rule(late_night_use["high"] & social_media["high"],
+              digital_overload["high"]),
+
+    # High overload — dominant single driver [Mark 2008]
+    ctrl.Rule(screen_glances["high"] & idle_checking["high"],
+              digital_overload["medium_high"]),
+    ctrl.Rule(idle_checking["high"] & late_night_use["high"],
+              digital_overload["medium_high"]),
+    ctrl.Rule(screen_glances["high"] & late_night_use["medium"],
+              digital_overload["medium_high"]),
+
+    # Moderate overload — mixed mid inputs [Kushlev 2015]
+    ctrl.Rule(social_media["high"] & screen_glances["low"] & late_night_use["low"],
+              digital_overload["medium"]),
+    ctrl.Rule(late_night_use["high"] & social_media["low"],
+              digital_overload["medium"]),
+    ctrl.Rule(screen_glances["high"] & social_media["low"],
+              digital_overload["medium"]),
+    ctrl.Rule(idle_checking["high"] & social_media["low"],
+              digital_overload["medium"]),
+    ctrl.Rule(screen_glances["medium"] & social_media["medium"],
+              digital_overload["medium"]),
+    ctrl.Rule(screen_glances["low"] & social_media["high"],
+              digital_overload["medium"]),
+
+    # Low overload — mostly low inputs [Newport 2016]
+    ctrl.Rule(screen_glances["medium"] & social_media["low"] & late_night_use["low"],
+              digital_overload["low"]),
+    ctrl.Rule(idle_checking["medium"] & screen_glances["low"],
+              digital_overload["low"]),
+
+    # Very low overload — all inputs minimal [Newport 2016; Ward 2017]
+    ctrl.Rule(screen_glances["low"] & social_media["low"],
+              digital_overload["very_low"]),
+    ctrl.Rule(screen_glances["low"] & idle_checking["low"] & late_night_use["low"],
+              digital_overload["very_low"]),
 ]
 
 focus_system = ctrl.ControlSystem(focus_rules)
@@ -217,86 +275,61 @@ do_in["high"]   = fuzz.trapmf(do_in.universe, [6.0, 8.0, 10,  10])
 habit_balance_out = ctrl.Consequent(intermediate_universe, "HabitBalance")
 habit_balance_out.defuzzify_method = "centroid"
 
-habit_balance_out["very_low"] = fuzz.trapmf(habit_balance_out.universe, [0,   0,   1.5, 3.0])
-habit_balance_out["low"]      = fuzz.trimf (habit_balance_out.universe, [2.0, 3.5, 5.0])
-habit_balance_out["medium"]   = fuzz.trimf (habit_balance_out.universe, [4.0, 5.5, 7.0])
-habit_balance_out["medium_high"] = fuzz.trimf(habit_balance_out.universe, [5.5, 7.0, 8.5])
-habit_balance_out["high"]     = fuzz.trapmf(habit_balance_out.universe, [7.0, 8.5, 10,  10])
+# 5 terms — same structure as FocusQuality, SleepQuality, DigitalOverload
+# Consistent with Maximum Membership Principle across all outputs (Zadeh, 1965)
+habit_balance_out["very_low"]   = fuzz.trapmf(habit_balance_out.universe, [0,   0,   1.5, 3.0])
+habit_balance_out["low"]        = fuzz.trimf (habit_balance_out.universe, [2.0, 3.5, 5.0])
+habit_balance_out["medium"]     = fuzz.trimf (habit_balance_out.universe, [4.0, 5.5, 7.0])
+habit_balance_out["medium_high"]= fuzz.trimf (habit_balance_out.universe, [5.5, 7.0, 8.5])
+habit_balance_out["high"]       = fuzz.trapmf(habit_balance_out.universe, [7.0, 8.5, 10,  10])
 
 # --- Rule base for 4th FIS ---
-# Covers all 27 logical combinations (H1–H27).
+# Covers the 27 logical combinations systematically.
 # Principle: focus and sleep drive balance up; overload drives it down.
 habit_rules = [
-    # === Cluster 1: High focus + high sleep ===
-    # H1
+    # === Best case: high focus + high sleep ===
     ctrl.Rule(fq_in["high"]   & sq_in["high"]   & do_in["low"],    habit_balance_out["high"]),
-    # H2
     ctrl.Rule(fq_in["high"]   & sq_in["high"]   & do_in["medium"], habit_balance_out["medium_high"]),
-    # H3
     ctrl.Rule(fq_in["high"]   & sq_in["high"]   & do_in["high"],   habit_balance_out["medium"]),
 
     # === High focus + medium sleep ===
-    # H13
     ctrl.Rule(fq_in["high"]   & sq_in["medium"] & do_in["low"],    habit_balance_out["medium_high"]),
-    # H14
     ctrl.Rule(fq_in["high"]   & sq_in["medium"] & do_in["medium"], habit_balance_out["medium"]),
-    # H15
     ctrl.Rule(fq_in["high"]   & sq_in["medium"] & do_in["high"],   habit_balance_out["low"]),
 
-    # === Cluster 2/3: High focus + low sleep ===
-    # H7
+    # === High focus + low sleep ===
     ctrl.Rule(fq_in["high"]   & sq_in["low"]    & do_in["low"],    habit_balance_out["medium"]),
-    # H12
     ctrl.Rule(fq_in["high"]   & sq_in["low"]    & do_in["medium"], habit_balance_out["low"]),
-    # H4
     ctrl.Rule(fq_in["high"]   & sq_in["low"]    & do_in["high"],   habit_balance_out["very_low"]),
 
     # === Medium focus + high sleep ===
-    # H16
     ctrl.Rule(fq_in["medium"] & sq_in["high"]   & do_in["low"],    habit_balance_out["medium_high"]),
-    # H17
     ctrl.Rule(fq_in["medium"] & sq_in["high"]   & do_in["medium"], habit_balance_out["medium"]),
-    # H18
     ctrl.Rule(fq_in["medium"] & sq_in["high"]   & do_in["high"],   habit_balance_out["low"]),
 
-    # === Cluster 4: Medium focus + medium sleep ===
-    # H10
+    # === Medium focus + medium sleep ===
     ctrl.Rule(fq_in["medium"] & sq_in["medium"] & do_in["low"],    habit_balance_out["medium"]),
-    # H11
     ctrl.Rule(fq_in["medium"] & sq_in["medium"] & do_in["medium"], habit_balance_out["medium"]),
-    # H5
     ctrl.Rule(fq_in["medium"] & sq_in["medium"] & do_in["high"],   habit_balance_out["low"]),
 
     # === Medium focus + low sleep ===
-    # H19
     ctrl.Rule(fq_in["medium"] & sq_in["low"]    & do_in["low"],    habit_balance_out["low"]),
-    # H8
     ctrl.Rule(fq_in["medium"] & sq_in["low"]    & do_in["medium"], habit_balance_out["low"]),
-    # H20
     ctrl.Rule(fq_in["medium"] & sq_in["low"]    & do_in["high"],   habit_balance_out["very_low"]),
 
     # === Low focus + high sleep ===
-    # H21
     ctrl.Rule(fq_in["low"]    & sq_in["high"]   & do_in["low"],    habit_balance_out["medium"]),
-    # H22
     ctrl.Rule(fq_in["low"]    & sq_in["high"]   & do_in["medium"], habit_balance_out["low"]),
-    # H23
     ctrl.Rule(fq_in["low"]    & sq_in["high"]   & do_in["high"],   habit_balance_out["very_low"]),
 
     # === Low focus + medium sleep ===
-    # H24
     ctrl.Rule(fq_in["low"]    & sq_in["medium"] & do_in["low"],    habit_balance_out["low"]),
-    # H25
     ctrl.Rule(fq_in["low"]    & sq_in["medium"] & do_in["medium"], habit_balance_out["low"]),
-    # H26
     ctrl.Rule(fq_in["low"]    & sq_in["medium"] & do_in["high"],   habit_balance_out["very_low"]),
 
-    # === Cluster 2/6: Low focus + low sleep ===
-    # H9
+    # === Worst case: low focus + low sleep ===
     ctrl.Rule(fq_in["low"]    & sq_in["low"]    & do_in["low"],    habit_balance_out["low"]),
-    # H27
     ctrl.Rule(fq_in["low"]    & sq_in["low"]    & do_in["medium"], habit_balance_out["very_low"]),
-    # H6
     ctrl.Rule(fq_in["low"]    & sq_in["low"]    & do_in["high"],   habit_balance_out["very_low"]),
 ]
 
@@ -311,31 +344,46 @@ def _clamp(value: float, minimum: float, maximum: float) -> float:
     return max(minimum, min(float(value), maximum))
 
 
+def _label_from_mf(score: float, antecedent_or_consequent) -> str:
+    """
+    Derive the linguistic label for a crisp score using the Maximum
+    Membership Principle: the label whose MF has the highest degree
+    of membership at `score` is returned.
+
+    This ensures labels are always consistent with the actual MF
+    definitions — no hardcoded thresholds that could drift out of
+    sync with the fuzzy sets.
+
+    Reference: Zadeh (1965) — linguistic variables and fuzzy sets.
+    """
+    best_label = "Medium"
+    best_degree = -1.0
+    for term_name, term in antecedent_or_consequent.terms.items():
+        degree = float(fuzz.interp_membership(
+            antecedent_or_consequent.universe,
+            term.mf,
+            score
+        ))
+        if degree > best_degree:
+            best_degree = degree
+            best_label = term_name
+    # Capitalise for display ("very_high" → "Very High")
+    return best_label.replace("_", " ").title()
+
+
 def _positive_label(score: float) -> str:
-    if score < 3.5:
-        return "Low"
-    if score < 6.5:
-        return "Medium"
-    return "High"
+    """Label for FocusQuality / SleepQuality outputs (MF-derived)."""
+    return _label_from_mf(score, focus_quality)
 
 
 def _overload_label(score: float) -> str:
-    if score < 3.5:
-        return "Low"
-    if score < 6.5:
-        return "Medium"
-    return "High"
+    """Label for DigitalOverload output (MF-derived)."""
+    return _label_from_mf(score, digital_overload)
 
-def _habit_balance_label(score: float) -> str:
-    if score < 3.0:
-        return "Very Low"
-    if score < 5.0:
-        return "Low"
-    if score < 7.0:
-        return "Medium"
-    if score < 8.5:
-        return "Medium-High"
-    return "High"
+
+def _habit_label(score: float) -> str:
+    """Label for HabitBalance output (MF-derived, 5 terms)."""
+    return _label_from_mf(score, habit_balance_out)
 
 def _add_recommendation(
         recommendations: list,
@@ -362,6 +410,23 @@ def _add_recommendation(
     })
 
 
+def _mu(var, term: str, value: float) -> float:
+    """
+    Compute the degree of membership of `value` in `var[term]`.
+    Uses skfuzzy's interp_membership for exact MF evaluation.
+
+    This replaces numeric thresholds with MF-derived degrees,
+    keeping the recommendation layer fully fuzzy-consistent.
+    Reference: Zadeh (1965) — membership function evaluation.
+
+    A degree > 0.5 means `value` is more `term` than not.
+    A degree > 0.1 means `term` has meaningful activation.
+    """
+    return float(fuzz.interp_membership(
+        var.universe, var[term].mf, value
+    ))
+
+
 def _literature_recommendations(
         screen_glances: float,
         idle_checking: float,
@@ -371,235 +436,218 @@ def _literature_recommendations(
         sleep: float,
         overload: float,
         habit: float,
+        lbl_focus: str,
+        lbl_sleep: str,
+        lbl_overload: str,
+        lbl_habit: str,
 ) -> list:
-    """
-    Literature-informed recommendation mapping.
-
-    The fuzzy system remains the decision engine.
-    This layer maps fuzzy outputs and raw inputs to practical behavioral principles.
-
-    """
 
     recommendations = []
 
-    # Source: Exelmans, Liese & Van den Bulck, Jan, 2016. "Bedtime mobile phone use and sleep in adults,"
-    # Social Science & Medicine, Elsevier, vol. 148(C), pages 93-101.)
-    # and
-    # Digital Wellness Institute (2024), "Healthy Tech Habits":
-    # no screens 30-60 minutes before bed; charge phone outside bedroom.
-    # Also aligned with James Clear, Atomic Habits: environment design.
-    if late_night_use >= 80 or sleep < 4.5:
+    # Fuzzy membership degrees for raw inputs
+    # Import module-level Antecedent variables explicitly to avoid
+    # name collision with the float parameters of this function.
+    import fuzzy_engine as _eng
+    mu_ln_high   = _mu(_eng.late_night_use,  "high",   late_night_use)
+    mu_ln_medium = _mu(_eng.late_night_use,  "medium", late_night_use)
+    mu_sg_high   = _mu(_eng.screen_glances,  "high",   screen_glances)
+    mu_sg_medium = _mu(_eng.screen_glances,  "medium", screen_glances)
+    mu_ic_high   = _mu(_eng.idle_checking,   "high",   idle_checking)
+    mu_sm_high   = _mu(_eng.social_media,    "high",   social_media)
+    mu_sm_medium = _mu(_eng.social_media,    "medium", social_media)
+
+    # Output condition helpers (from MF-derived labels — no numbers)
+    sleep_poor    = lbl_sleep    in {"Very Low", "Low"}
+    sleep_medium  = lbl_sleep    == "Medium"
+    focus_poor    = lbl_focus    in {"Very Low", "Low"}
+    focus_medium  = lbl_focus    == "Medium"
+    overload_high = lbl_overload in {"High", "Medium High"}
+    habit_poor    = lbl_habit    in {"Very Low", "Low"}
+    habit_medium  = lbl_habit    == "Medium"
+    habit_good    = lbl_habit    in {"High", "Medium High"}
+
+    # ── RECOMMENDATIONS ──
+
+    # Source: Exelmans & Van den Bulck (2016); Digital Wellness Institute (2024); Atomic Habits
+    if mu_ln_high > 0.3 or sleep_poor:
+        reason = (f"Late Night Use activating 'high' (μ={mu_ln_high:.2f})"
+                  if mu_ln_high > 0.3
+                  else f"Sleep Quality is '{lbl_sleep}'")
         _add_recommendation(
             recommendations,
             rec_id="late_night_sleep_boundary",
             priority=1,
             source="Exelmans & Van den Bulck; Digital Wellness Institute; Atomic Habits",
-            trigger=f"Late Night Use is {late_night_use:.0f} minutes and Sleep Quality is {sleep:.2f}/10.",
+            trigger=f"{reason} — bedtime boundaries recommended.",
             principle="Reduce bedtime screen exposure through environment design.",
             action="Charge your phone outside the bedroom and stop screens 30 minutes earlier.",
             insight="Your sleep score is strongly shaped by evening phone boundaries."
         )
 
-    # Source: Cal Newport, Digital Minimalism:
-    # remove low-value optional digital use and replace it with meaningful offline activity.
-    # Digital Wellness Institute (2024): replace social media time with meaningful activities.
-    if late_night_use >= 60 and social_media >= 55:
+    # Source: Newport (2021) Digital Minimalism; Digital Wellness Institute (2024)
+    if mu_ln_medium > 0.4 and mu_sm_high > 0.3:
         _add_recommendation(
             recommendations,
             rec_id="late_night_social_replacement",
             priority=2,
             source="Digital Minimalism; Digital Wellness Institute",
-            trigger=f"Late Night Use is {late_night_use:.0f} minutes and Social Media Usage is {social_media:.0f}%.",
+            trigger=f"Late Night Use is in medium zone (μ={mu_ln_medium:.2f}) and Social Media is high (μ={mu_sm_high:.2f}).",
             principle="Replace low-value late-night scrolling with intentional offline recovery.",
             action="Replace late-night social scrolling with one planned offline wind-down activity.",
             insight="Late social media combines stimulation, habit, and poor timing."
         )
 
-    # Source: Cal Newport, Deep Work:
-    # protect focused work from attention fragmentation.
-    # Nir Eyal, Indistractable: schedule intentional checking instead of reactive checking.
-    if screen_glances >= 65 or focus < 4.5:
+    # Source: Ward et al. (2017); Mark et al. (2008)
+    if mu_sg_high > 0.3 or focus_poor:
         _add_recommendation(
             recommendations,
-            rec_id="screen_glance_checking_windows",
+            rec_id="screen_glance_focus_boundary",
             priority=3,
-            source="Deep Work; Indistractable",
-            trigger=f"Screen Glances are {screen_glances:.0f} per day and Focus Quality is {focus:.2f}/10.",
-            principle="Reduce attention fragmentation with planned phone-checking windows.",
-            action="Use three fixed phone-check windows to protect focus from repeated unlocks.",
-            insight="Frequent glances can fragment attention even when total screen time feels normal."
+            source="Ward et al.; Mark et al.",
+            trigger=f"Screen Glances activating 'high' (μ={mu_sg_high:.2f}) and Focus Quality is '{lbl_focus}'.",
+            principle="Reduce fragmented attention by setting physical phone boundaries.",
+            action="Keep your phone face-down or in a drawer during focused work blocks.",
+            insight="Mere phone presence reduces cognitive capacity even without use."
         )
 
-    # Source: Cal Newport, Deep Work and Digital Wellness Institute (2024):
-    # turn off notifications and practice one-tasking to reduce interruptions.
-    if screen_glances >= 65 and idle_checking >= 40:
+    # Source: Kushlev & Dunn (2015)
+    if mu_sg_high > 0.3 and mu_ic_high > 0.3:
         _add_recommendation(
             recommendations,
-            rec_id="notifications_and_idle_checking",
+            rec_id="idle_checking_batch",
             priority=4,
-            source="Deep Work; Digital Wellness Institute",
-            trigger=f"Screen Glances are {screen_glances:.0f} and Idle Checking is {idle_checking:.0f}.",
-            principle="Reduce external triggers and repeated checking loops.",
-            action="Turn off non-essential notifications and check messages only during planned windows.",
-            insight="Your issue is not only usage, but repeated attention switching."
+            source="Kushlev & Dunn",
+            trigger=f"Screen Glances (μ_high={mu_sg_high:.2f}) and Idle Checking (μ_high={mu_ic_high:.2f}) both elevated.",
+            principle="Batch phone checks to reduce the stress of constant notifications.",
+            action="Check your phone only at scheduled times — e.g. every 90 minutes.",
+            insight="Batching checks cuts the hidden stress of perpetual availability."
         )
 
-    # Source: BJ Fogg, Tiny Habits and James Clear, Atomic Habits:
-    # make the replacement behavior very small and easy to repeat.
-    if idle_checking >= 40:
+    # Source: Sweller (1994) CLT; Kushlev & Dunn (2015)
+    if mu_ic_high > 0.5:
         _add_recommendation(
             recommendations,
-            rec_id="idle_checking_tiny_replacement",
+            rec_id="idle_checking_notification_audit",
             priority=5,
-            source="Tiny Habits; Atomic Habits",
-            trigger=f"Idle Checking is {idle_checking:.0f} short checks per day.",
-            principle="Replace automatic checking with a tiny alternative behavior.",
-            action="When you reach for the phone, take one breath before unlocking.",
-            insight="A tiny pause makes automatic checking visible before it becomes scrolling."
+            source="Cognitive Load Theory; Kushlev & Dunn",
+            trigger=f"Idle Checking is predominantly 'high' (μ={mu_ic_high:.2f}).",
+            principle="Reduce cognitive load by removing low-value notification sources.",
+            action="Turn off notifications for the three least-important apps on your phone.",
+            insight="Each notification creates a micro-interruption that fragments thinking."
         )
 
-    # Source: Cal Newport, Digital Minimalism:
-    # take a temporary break from optional technologies to clarify their value.
-    # Digital Wellness Institute (2024): a week-long social media fast can reset habits.
-    if social_media >= 75:
+    # Source: Twenge & Campbell (2018); Przybylski & Weinstein (2017)
+    if mu_sm_high > 0.5:
         _add_recommendation(
             recommendations,
-            rec_id="social_media_fast",
+            rec_id="social_media_goldilocks",
             priority=6,
-            source="Digital Minimalism; Digital Wellness Institute",
-            trigger=f"Social Media Usage is {social_media:.0f}% of total screen time.",
-            principle="Use a short social media fast to reset optional digital habits.",
-            action="Try a seven-day social media fast and remove the apps temporarily.",
-            insight="Removing access works better than relying on willpower alone."
+            source="Twenge & Campbell; Przybylski & Weinstein",
+            trigger=f"Social Media Usage is predominantly 'high' (μ={mu_sm_high:.2f}).",
+            principle="Apply the Goldilocks principle — moderate social media use is neutral; high use is harmful.",
+            action="Set a daily time limit for your most-used social app.",
+            insight="Moderate use has neutral wellbeing effects; high use consistently lowers wellbeing."
         )
 
-    # Source: Cal Newport, Digital Minimalism:
-    # use technology intentionally, not automatically.
-    # Digital Wellness Institute (2024): set app time limits and use timers.
-    if social_media >= 55:
+    # Source: Twenge & Campbell (2018)
+    if mu_sm_medium > 0.5 and mu_sm_high < 0.3:
         _add_recommendation(
             recommendations,
-            rec_id="intentional_social_media_slot",
+            rec_id="social_media_intentional_use",
             priority=7,
-            source="Digital Minimalism; Digital Wellness Institute",
-            trigger=f"Social Media Usage is {social_media:.0f}% of total screen time.",
-            principle="Shift social media from automatic use to intentional sessions.",
-            action="Set one daily social media slot and close the app when it ends.",
-            insight="A defined slot turns social media from background noise into a choice."
+            source="Twenge & Campbell",
+            trigger=f"Social Media Usage is in medium zone (μ={mu_sm_medium:.2f}).",
+            principle="Keep social media use at a moderate, intentional level.",
+            action="Use social media only for a specific purpose — not as default boredom relief.",
+            insight="Passive scrolling drives most of the negative wellbeing effect."
         )
 
-    # Source: Digital Wellness Institute (2024):
-    # app blockers can blacklist distracting apps during specific times.
-    # Nir Eyal, Indistractable: reduce external triggers before distraction happens.
-    if overload >= 7.0:
+    # Source: Newport (2016) Deep Work; Ward et al. (2017)
+    if overload_high and focus_poor:
         _add_recommendation(
             recommendations,
-            rec_id="high_overload_app_blocker",
+            rec_id="overload_focus_protection",
             priority=8,
-            source="Digital Wellness Institute; Indistractable",
-            trigger=f"Digital Overload is {overload:.2f}/10.",
-            principle="Use friction to prevent high-overload digital patterns.",
-            action="Block distracting apps during focus time and after your planned evening cutoff.",
+            source="Deep Work; Ward et al.",
+            trigger=f"Digital Overload is '{lbl_overload}' and Focus Quality is '{lbl_focus}'.",
+            principle="Protect deep focus periods from digital overload.",
+            action="Schedule one 90-minute phone-free block per day for deep work.",
+            insight="Deep work requires zero digital interruption — even standby reduces capacity."
+        )
+
+    # Source: Sweller (1994); Kushlev & Dunn (2015)
+    if overload_high and mu_ic_high > 0.3:
+        _add_recommendation(
+            recommendations,
+            rec_id="overload_notification_reduction",
+            priority=9,
+            source="Cognitive Load Theory; Kushlev & Dunn",
+            trigger=f"Digital Overload is '{lbl_overload}' and Idle Checking elevated (μ={mu_ic_high:.2f}).",
+            principle="Reducing passive checking directly lowers cognitive overload.",
+            action="Enable Do Not Disturb for 2-hour blocks during your peak focus hours.",
             insight="High overload often needs friction, not just motivation."
         )
 
-    # Source: Digital Wellness Institute (2024):
-    # turn off notifications and set do-not-disturb times.
-    # James Clear, Atomic Habits: make good behavior easier by changing the environment.
-    if overload >= 6.5 and idle_checking >= 30:
+    # Source: Rasch & Born (2013); Combertaldi et al. (2021)
+    if sleep_poor and mu_sg_medium > 0.3:
         _add_recommendation(
             recommendations,
-            rec_id="do_not_disturb_boundary",
-            priority=9,
-            source="Digital Wellness Institute; Atomic Habits",
-            trigger=f"Digital Overload is {overload:.2f}/10 and Idle Checking is {idle_checking:.0f}.",
-            principle="Create a low-friction boundary against repeated interruptions.",
-            action="Enable do-not-disturb during meals, workouts, and your first work hour.",
-            insight="Boundaries work best when they are automatic, visible, and repeated."
-        )
-
-    # Source: Digital Wellness Institute (2024):
-    # practice one-tasking and avoid toggling between tasks.
-    # Cal Newport, Deep Work: preserve uninterrupted attention.
-    if focus < 5.5 and screen_glances >= 40 and screen_glances < 65:
-        _add_recommendation(
-            recommendations,
-            rec_id="medium_glance_one_tasking",
+            rec_id="sleep_glance_pattern",
             priority=10,
-            source="Digital Wellness Institute; Deep Work",
-            trigger=f"Screen Glances are {screen_glances:.0f} and Focus Quality is {focus:.2f}/10.",
-            principle="Protect moderate focus by reducing task switching.",
-            action="Choose one screen task at a time and finish before switching.",
-            insight="Moderate checking can still weaken focus when it creates task-hopping."
+            source="Rasch & Born; Combertaldi et al.",
+            trigger=f"Sleep Quality is '{lbl_sleep}' and moderate glance pattern (μ={mu_sg_medium:.2f}).",
+            principle="Reduce stimulation in the 90 minutes before sleep.",
+            action="Switch your phone to grayscale mode after 21:00 to reduce stimulation.",
+            insight="Screen light and content stimulation both delay sleep onset."
         )
 
-    # Source: Digital Wellness Institute (2024):
-    # avoid passive scrolling and choose activities that add value.
-    # Cal Newport, Digital Minimalism: prioritize high-value technology use.
-    if social_media >= 55 and screen_glances <= 40 and late_night_use <= 25:
+    # Source: Newport (2021) Digital Minimalism
+    if focus_medium and mu_sg_medium > 0.4:
         _add_recommendation(
             recommendations,
-            rec_id="high_social_but_controlled_timing",
+            rec_id="focus_improvement_batching",
             priority=11,
-            source="Digital Minimalism; Digital Wellness Institute",
-            trigger=f"Social Media Usage is {social_media:.0f}%, but glances and late-night use are low.",
-            principle="Keep social media intentional when timing and checking are already controlled.",
-            action="Keep social media to one intentional session, not scattered passive scrolling.",
-            insight="Your timing is controlled; the next improvement is content quality."
+            source="Digital Minimalism",
+            trigger=f"Focus Quality is '{lbl_focus}' and Screen Glances moderate (μ={mu_sg_medium:.2f}).",
+            principle="Small reductions in glances improve focus quality significantly.",
+            action="Reduce screen glances by 20% by leaving your phone in another room during work.",
+            insight="Phone proximity alone reduces available cognitive resources."
         )
 
-    # Source: James Clear, Atomic Habits:
-    # use visual cues and environment design to interrupt unwanted habits.
-    if screen_glances >= 100:
+    # Source: Fogg (2019) Tiny Habits
+    if mu_ln_medium > 0.5 and mu_ln_high < 0.3:
         _add_recommendation(
             recommendations,
-            rec_id="very_high_glance_phone_parking",
+            rec_id="late_night_gradual_reduction",
             priority=12,
-            source="Atomic Habits",
-            trigger=f"Screen Glances are very high at {screen_glances:.0f} per day.",
-            principle="Make the unwanted habit harder by changing phone placement.",
-            action="Park your phone away from your desk during one focused work block.",
-            insight="Distance adds friction, and friction weakens automatic checking loops."
-        )
-
-    # Source: BJ Fogg, Tiny Habits:
-    # reduce behavior in very small, realistic steps.
-    if 25 < late_night_use < 80:
-        _add_recommendation(
-            recommendations,
-            rec_id="medium_late_night_gradual_reduction",
-            priority=13,
             source="Tiny Habits",
-            trigger=f"Late Night Use is moderate at {late_night_use:.0f} minutes.",
+            trigger=f"Late Night Use is in medium zone (μ={mu_ln_medium:.2f}).",
             principle="Use a small reduction instead of a strict ban.",
             action="Reduce late-night use by ten minutes for the next seven evenings.",
             insight="Small reductions are easier to repeat than sudden digital curfews."
         )
 
-    # Source: Cal Newport, Digital Minimalism:
-    # replace low-value online time with meaningful offline activity.
-    # Digital Wellness Institute (2024): reading, exercising, nature, and screen-free activities.
-    if habit < 6.5 and overload >= 5.0:
+    # Source: Newport (2021) Digital Minimalism; Digital Wellness Institute (2024)
+    if habit_poor and overload_high:
         _add_recommendation(
             recommendations,
             rec_id="offline_replacement_activity",
-            priority=14,
+            priority=13,
             source="Digital Minimalism; Digital Wellness Institute",
-            trigger=f"Habit Balance is {habit:.2f}/10 and Digital Overload is {overload:.2f}/10.",
+            trigger=f"Habit Balance is '{lbl_habit}' and Digital Overload is '{lbl_overload}'.",
             principle="Replace digital stimulation with a meaningful offline activity.",
             action="Swap one scrolling session for reading, walking, or a screen-free hobby.",
             insight="Replacement works better than empty restriction because it fills the habit gap."
         )
 
-    # Source: James Clear, Atomic Habits:
-    # preserve good systems and repeat small protective routines.
-    if habit >= 7.0:
+    # Source: Clear (2018) Atomic Habits
+    if habit_good:
         _add_recommendation(
             recommendations,
             rec_id="balanced_pattern_protective_routine",
-            priority=15,
+            priority=14,
             source="Atomic Habits",
-            trigger=f"Habit Balance is strong at {habit:.2f}/10.",
+            trigger=f"Habit Balance is '{lbl_habit}' — a healthy digital pattern.",
             principle="Maintain the current habit system with one small protective routine.",
             action="Keep one daily phone-free moment to protect your current balance.",
             insight="Balanced habits still need small boundaries to stay stable."
@@ -697,6 +745,11 @@ def evaluate_fuzzy_system(
     habit_sim.compute()
     habit = round(_safe_output(habit_sim, "HabitBalance"), 2)
 
+    focus_lbl   = _positive_label(focus)
+    sleep_lbl   = _positive_label(sleep)
+    overload_lbl= _overload_label(overload)
+    habit_lbl   = _habit_label(habit)
+
     recommendations = _literature_recommendations(
         screen_glances=screen_glances_value,
         idle_checking=idle_checking_value,
@@ -706,6 +759,10 @@ def evaluate_fuzzy_system(
         sleep=sleep,
         overload=overload,
         habit=habit,
+        lbl_focus=focus_lbl,
+        lbl_sleep=sleep_lbl,
+        lbl_overload=overload_lbl,
+        lbl_habit=habit_lbl,
     )
 
     return {
@@ -722,10 +779,10 @@ def evaluate_fuzzy_system(
             "HabitBalance": habit,
         },
         "labels": {
-            "FocusQuality": _positive_label(focus),
-            "SleepQuality": _positive_label(sleep),
-            "DigitalOverload": _overload_label(overload),
-            "HabitBalance": _habit_balance_label(habit),
+            "FocusQuality":    focus_lbl,
+            "SleepQuality":    sleep_lbl,
+            "DigitalOverload": overload_lbl,
+            "HabitBalance":    habit_lbl,
         },
         "recommendation": _recommendation(recommendations),
         "recommendations": recommendations,

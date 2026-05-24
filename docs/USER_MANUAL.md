@@ -25,12 +25,12 @@ The browser opens automatically at `http://localhost:8501`.
 
 ## Inputs
 
-| Input | Unit | Range | What it measures |
-|---|---|---|---|
-| ScreenGlances | glances/day | 0–150 | How often you pick up your phone |
+| Input | Unit | Range | What it measures                       |
+|---|---|---|----------------------------------------|
+| ScreenGlances | glances/day | 0–150 | How often you pick up your phone       |
 | IdleChecking | checks/day | 0–80 | Checking phone without a clear purpose |
-| LateNightUse | min after 22:00 | 0–180 | Phone use after 10 PM |
-| SocialMediaUsage | % of screen time | 0–100 | Share of time on social platforms |
+| LateNightUse | min after 22:00 | 0–180 | Phone use before bedtime |
+| SocialMediaUsage | % of screen time | 0–100 | Share of time on social platforms      |
 
 Use the sliders in the left sidebar to enter your values.
 
@@ -70,10 +70,3 @@ Expected output: `27 passed`.
 ## Comparison mode
 
 The app includes a crisp rule-based comparison system (`src/crisp_engine.py`). Run `streamlit run src/comparison_app.py` to see side-by-side how the fuzzy system handles borderline cases more gracefully than crisp thresholds.
-
-## References
-
-- Kushlev, K. et al. (2015). Checking email less frequently reduces stress. *Computers in Human Behavior*.
-- Christensen, M.A. et al. (2016). Direct measurements of smartphone screen-time. *PLOS ONE*.
-- Digital Wellness Institute (2024). Digital Wellness Framework.
-- Mendel, J.M. (2001). *Uncertain Rule-Based Fuzzy Systems*. Springer.

@@ -129,37 +129,144 @@ if "history" not in st.session_state:
 # ============================================================
 # HELPERS
 # ============================================================
+def _ui_tier(val: float, invert: bool = False) -> str:
+    """
+    Derive the UI display tier from fuzzy MFs.
+    Uses Maximum Membership Principle (Zadeh, 1965).
+
+    5 tiers mapped from 5 MF terms:
+      High        → very_good
+      Medium High → good
+      Medium      → moderate
+      Low         → poor
+      Very Low    → very_poor
+
+    For DigitalOverload (invert=True) semantics are reversed:
+      Very Low overload → very_good  (best case)
+      High overload     → very_poor  (worst case)
+    """
+    from fuzzy_engine import _label_from_mf, focus_quality
+    raw = _label_from_mf(val, focus_quality)  # same MF shape for all outputs
+
+    mapping = {
+        "High":        "very_good",
+        "Medium High": "good",
+        "Medium":      "moderate",
+        "Low":         "poor",
+        "Very Low":    "very_poor",
+    }
+    mapping_inv = {
+        "Very Low":    "very_good",
+        "Low":         "good",
+        "Medium":      "moderate",
+        "Medium High": "poor",
+        "High":        "very_poor",
+    }
+    return (mapping_inv if invert else mapping).get(raw, "moderate")
+
+
 def score_color(val, invert=False):
-    v = (10 - val) if invert else val
-    if v >= 6.5: return "#34d399"
-    if v >= 3.5: return "#fbbf24"
-    return "#f87171"
+    return {
+        "very_good": "#34d399",
+        "good":      "#86efac",
+        "moderate":  "#fbbf24",
+        "poor":      "#f97316",
+        "very_poor": "#f87171",
+    }[_ui_tier(val, invert)]
+
 
 def score_label(val, invert=False):
-    v = (10 - val) if invert else val
-    if v >= 6.5: return "Good",    "lab-good"
-    if v >= 3.5: return "Moderate","lab-medium"
-    return "Poor", "lab-poor"
+    return {
+        "very_good": ("Very Good", "lab-good"),
+        "good":      ("Good",      "lab-good"),
+        "moderate":  ("Moderate",  "lab-medium"),
+        "poor":      ("Poor",      "lab-poor"),
+        "very_poor": ("Very Poor", "lab-poor"),
+    }[_ui_tier(val, invert)]
 
 def zone_tag(val, lo, hi):
     if val <= lo:  return "Low",    "zone-low"
     if val <= hi:  return "Medium", "zone-medium"
     return "High", "zone-high"
 
+def _mu_input(var_name: str, term: str, value: float) -> float:
+    """Compute membership degree for a raw input value """
+    import skfuzzy as fuzz
+    import fuzzy_engine as _eng
+    var = getattr(_eng, var_name)
+    return float(fuzz.interp_membership(var.universe, var[term].mf, value))
+
+
 def detect_profile(sg, ic, ln, sm):
-    if ln >= 65 and sm >= 55: return "🌙","Night Owl","High late-night + dominant social media"
-    if sg >= 65 and ic >= 40: return "📲","Distracted Achiever","High screen glances + compulsive idle checking"
-    if sg <= 40 and ic <= 20 and ln <= 30 and sm <= 30: return "⚖️","Balanced User","Low across all — intentional use"
-    if sg <= 45 and sm <= 30: return "📚","Focused Worker","Low glances + low social media"
-    return "🔀","Mixed Profile","Combination of overlapping behaviour patterns"
+    """
+    Detect user profile using fuzzy membership degrees.
+    Each profile corresponds to a dominant pattern in the input MF space.
+    """
+    mu_ln_high = _mu_input("late_night_use", "high",   ln)
+    mu_sm_high = _mu_input("social_media",   "high",   sm)
+    mu_sg_high = _mu_input("screen_glances", "high",   sg)
+    mu_ic_high = _mu_input("idle_checking",  "high",   ic)
+    mu_sg_low  = _mu_input("screen_glances", "low",    sg)
+    mu_sm_low  = _mu_input("social_media",   "low",    sm)
+    mu_ln_low  = _mu_input("late_night_use", "low",    ln)
+    mu_ic_low  = _mu_input("idle_checking",  "low",    ic)
+
+    if mu_ln_high > 0.4 and mu_sm_high > 0.4:
+        return "🌙", "Night Owl", "High late-night + dominant social media"
+    if mu_sg_high > 0.4 and mu_ic_high > 0.4:
+        return "📲", "Distracted Achiever", "High screen glances + compulsive idle checking"
+    if mu_sg_low > 0.5 and mu_ic_low > 0.5 and mu_ln_low > 0.5 and mu_sm_low > 0.5:
+        return "⚖️", "Balanced User", "Low across all — intentional use"
+    if mu_sg_low > 0.4 and mu_sm_low > 0.5:
+        return "📚", "Focused Worker", "Low glances + low social media"
+    return "🔀", "Mixed Profile", "Combination of overlapping behaviour patterns"
+
 
 def specific_recs(sg, ic, ln, sm):
+    """
+    Sidebar warnings derived from input MF membership degrees.
+    """
     recs = []
-    if ln >= 65: recs.append(f"🌙 <b>LateNightUse = {ln} min</b> — Enable bedtime mode after 22:00 and stop scrolling 30 min before sleep.")
-    if ic >= 40: recs.append(f"⏳ <b>IdleChecking = {ic}/day</b> — Keep your phone out of reach during study breaks and idle moments.")
-    if sg >= 65: recs.append(f"👁 <b>ScreenGlances = {sg}/day</b> — Disable non-essential notifications to reduce automatic unlocking.")
-    if sm >= 55: recs.append(f"📱 <b>SocialMedia = {sm}%</b> — Set fixed time windows for social apps instead of checking continuously.")
-    if not recs: recs.append("✅ <b>All habits look balanced.</b> Maintain intentional phone use and avoid notification creep.")
+    if _mu_input("late_night_use", "high", ln) > 0.3:
+        recs.append(f"🌙 <b>LateNightUse = {ln} min</b> — Enable bedtime mode after 22:00 and stop scrolling 30 min before sleep.")
+    if _mu_input("idle_checking",  "high", ic) > 0.3:
+        recs.append(f"⏳ <b>IdleChecking = {ic}/day</b> — Keep your phone out of reach during study breaks and idle moments.")
+    if _mu_input("screen_glances", "high", sg) > 0.3:
+        recs.append(f"👁 <b>ScreenGlances = {sg}/day</b> — Disable non-essential notifications to reduce automatic unlocking.")
+    if _mu_input("social_media",   "high", sm) > 0.3:
+        recs.append(f"📱 <b>SocialMedia = {sm}%</b> — Set fixed time windows for social apps instead of checking continuously.")
+    # Medium late-night use — gentle nudge before it becomes high
+    if _mu_input("late_night_use", "medium", ln) > 0.4 and _mu_input("late_night_use", "high", ln) <= 0.3:
+        recs.append(f"🛏 <b>LateNightUse = {ln} min</b> — Try reducing by 10 minutes each evening. Small reductions are easier to sustain than sudden curfews.")
+
+    # Medium social media — passive scrolling warning
+    if _mu_input("social_media", "medium", sm) > 0.4 and _mu_input("social_media", "high", sm) <= 0.3:
+        recs.append(f"📲 <b>SocialMedia = {sm}%</b> — Use apps with a clear purpose, not as default boredom relief. Passive scrolling drives most of the negative wellbeing effect.")
+
+    # Screen glances + idle checking both elevated — combined fragmentation
+    if _mu_input("screen_glances", "high", sg) > 0.2 and _mu_input("idle_checking", "high", ic) > 0.2:
+        recs.append(f"🔁 <b>ScreenGlances + IdleChecking both elevated</b> — Create phone-free zones in your workspace and at the dining table to break the checking loop.")
+
+    # Late night + social media combined — the worst sleep disruptor pattern
+    if _mu_input("late_night_use", "high", ln) > 0.2 and _mu_input("social_media", "high", sm) > 0.2:
+        recs.append(f"😴 <b>Late-night social media detected</b> — Switch off devices at least 1 hour before bed and replace the habit with an offline wind-down activity like reading or light stretching.")
+
+    # Medium screen glances — worth scheduling intentional checks
+    if _mu_input("screen_glances", "medium", sg) > 0.4 and _mu_input("screen_glances", "high", sg) <= 0.3:
+        recs.append(f"⏱ <b>ScreenGlances = {sg}/day</b> — Schedule device-free periods of 90 minutes during your day. Checking less frequently reduces stress even when overall use feels moderate.")
+
+    # Positive reinforcement when all inputs are genuinely low
+    mu_all_low = min(
+        _mu_input("screen_glances", "low", sg),
+        _mu_input("idle_checking",  "low", ic),
+        _mu_input("late_night_use", "low", ln),
+        _mu_input("social_media",   "low", sm),
+    )
+    if mu_all_low > 0.3:
+        recs.append("🌿 <b>All habits in the low zone.</b> Keep one daily phone-free moment — a meal, a walk, or a morning routine — to protect this balance long-term.")
+
+    if not recs:
+        recs.append("✅ <b>All habits look balanced.</b> Maintain intentional phone use and avoid notification creep.")
     return recs
 
 def gauge_svg(score, color, size=195):
@@ -261,7 +368,7 @@ def sparkline_svg(values, width=200, height=40):
   {dots}
 </svg>"""
 
-MF = {"ScreenGlances":(40,65),"IdleChecking":(20,40),"LateNightUse":(25,65),"SocialMediaUsage":(30,55)}
+MF = {"ScreenGlances":(40,65),"IdleChecking":(20,40),"LateNightUse":(30,60),"SocialMediaUsage":(25,40)}
 
 # ============================================================
 # SIDEBAR
@@ -271,7 +378,7 @@ with st.sidebar:
     sliders = [
         ("ScreenGlances","Screen Glances",0,150,50,1,"Phone unlocks / day"),
         ("IdleChecking","Idle Checking",0,80,20,1,"Habitual short checks / day"),
-        ("LateNightUse","Late Night Use",0,180,30,1,"Minutes of use after 22:00"),
+        ("LateNightUse","Late Night Use",0,120,30,1,"Minutes of use before bedtime"),
         ("SocialMediaUsage","Social Media %",0,100,40,1,"% of total screen time"),
     ]
     vals = {}
@@ -490,23 +597,39 @@ with r3c:
     rules_fired = []
     sg, ic, ln, sm = vals["ScreenGlances"], vals["IdleChecking"], vals["LateNightUse"], vals["SocialMediaUsage"]
 
-    if sg >= 65: rules_fired.append(("focus","IF ScreenGlances IS High → FocusQuality IS Low","#fbbf24"))
-    if ln >= 65: rules_fired.append(("focus","IF LateNightUse IS High → FocusQuality IS Low","#fbbf24"))
-    if ic >= 40 and sg >= 65: rules_fired.append(("focus","IF IdleChecking IS High AND ScreenGlances IS High → FocusQuality IS Very Low","#f87171"))
-    elif ic >= 40: rules_fired.append(("focus","IF IdleChecking IS High → FocusQuality IS Low","#fbbf24"))
-    if sm >= 55: rules_fired.append(("focus","IF SocialMedia IS High → FocusQuality IS Low","#fbbf24"))
-    if sg <= 40 and sm <= 30: rules_fired.append(("focus","IF ScreenGlances IS Low AND SocialMedia IS Low → FocusQuality IS High","#34d399"))
-    if sg >= 20 and sg <= 90 and ln <= 25: rules_fired.append(("focus","IF ScreenGlances IS Medium AND LateNightUse IS Low → FocusQuality IS Medium-High","#34d399"))
-    if ln >= 80 and sm >= 55: rules_fired.append(("sleep","IF LateNightUse IS High AND SocialMedia IS High → SleepQuality IS Low","#f87171"))
-    if ln >= 80 and sg >= 65: rules_fired.append(("sleep","IF LateNightUse IS High AND ScreenGlances IS High → SleepQuality IS Low","#f87171"))
-    if ln <= 25 and sg <= 40 and ic <= 20: rules_fired.append(("sleep","IF LateNightUse IS Low AND ScreenGlances IS Low AND IdleChecking IS Low → SleepQuality IS High","#34d399"))
-    if sg >= 65 and sm >= 55: rules_fired.append(("overload","IF ScreenGlances IS High AND SocialMedia IS High → DigitalOverload IS High","#f87171"))
-    if ic >= 40 and sm >= 55: rules_fired.append(("overload","IF IdleChecking IS High AND SocialMedia IS High → DigitalOverload IS High","#f87171"))
-    if sm >= 55 and sg <= 40 and ln <= 25: rules_fired.append(("overload","IF SocialMedia IS High AND Glances IS Low AND LateNight IS Low → DigitalOverload IS Medium","#fbbf24"))
-    if sg <= 40 and sm <= 30: rules_fired.append(("overload","IF ScreenGlances IS Low AND SocialMedia IS Low → DigitalOverload IS Low","#34d399"))
+    # Compute membership degrees for all inputs — the real fuzzy activations
+    mu_sg_h = _mu_input("screen_glances", "high",   sg)
+    mu_sg_m = _mu_input("screen_glances", "medium", sg)
+    mu_sg_l = _mu_input("screen_glances", "low",    sg)
+    mu_ic_h = _mu_input("idle_checking",  "high",   ic)
+    mu_ic_l = _mu_input("idle_checking",  "low",    ic)
+    mu_ln_h = _mu_input("late_night_use", "high",   ln)
+    mu_ln_l = _mu_input("late_night_use", "low",    ln)
+    mu_sm_h = _mu_input("social_media",   "high",   sm)
+    mu_sm_l = _mu_input("social_media",   "low",    sm)
+
+    # Focus rules — fire when activation > 0.1
+    if mu_sg_h > 0.1: rules_fired.append(("focus",f"IF ScreenGlances IS High (μ={mu_sg_h:.2f}) → FocusQuality IS Low","#fbbf24"))
+    if mu_ln_h > 0.1: rules_fired.append(("focus",f"IF LateNightUse IS High (μ={mu_ln_h:.2f}) → FocusQuality IS Low","#fbbf24"))
+    if mu_ic_h > 0.1 and mu_sg_h > 0.1: rules_fired.append(("focus",f"IF IdleChecking IS High (μ={mu_ic_h:.2f}) AND ScreenGlances IS High (μ={mu_sg_h:.2f}) → FocusQuality IS Very Low","#f87171"))
+    elif mu_ic_h > 0.1: rules_fired.append(("focus",f"IF IdleChecking IS High (μ={mu_ic_h:.2f}) → FocusQuality IS Low","#fbbf24"))
+    if mu_sm_h > 0.1: rules_fired.append(("focus",f"IF SocialMedia IS High (μ={mu_sm_h:.2f}) → FocusQuality IS Low","#fbbf24"))
+    if mu_sg_l > 0.5 and mu_sm_l > 0.5: rules_fired.append(("focus",f"IF ScreenGlances IS Low (μ={mu_sg_l:.2f}) AND SocialMedia IS Low (μ={mu_sm_l:.2f}) → FocusQuality IS High","#34d399"))
+    if mu_sg_m > 0.3 and mu_ln_l > 0.5: rules_fired.append(("focus",f"IF ScreenGlances IS Medium (μ={mu_sg_m:.2f}) AND LateNightUse IS Low (μ={mu_ln_l:.2f}) → FocusQuality IS Medium High","#34d399"))
+
+    # Sleep rules
+    if mu_ln_h > 0.1 and mu_sm_h > 0.1: rules_fired.append(("sleep",f"IF LateNightUse IS High (μ={mu_ln_h:.2f}) AND SocialMedia IS High (μ={mu_sm_h:.2f}) → SleepQuality IS Very Low","#f87171"))
+    if mu_ln_h > 0.1 and mu_sg_h > 0.1: rules_fired.append(("sleep",f"IF LateNightUse IS High (μ={mu_ln_h:.2f}) AND ScreenGlances IS High (μ={mu_sg_h:.2f}) → SleepQuality IS Very Low","#f87171"))
+    if mu_ln_l > 0.5 and mu_sg_l > 0.5 and mu_ic_l > 0.5: rules_fired.append(("sleep",f"IF LateNightUse IS Low (μ={mu_ln_l:.2f}) AND ScreenGlances IS Low (μ={mu_sg_l:.2f}) AND IdleChecking IS Low (μ={mu_ic_l:.2f}) → SleepQuality IS High","#34d399"))
+
+    # Overload rules
+    if mu_sg_h > 0.1 and mu_sm_h > 0.1: rules_fired.append(("overload",f"IF ScreenGlances IS High (μ={mu_sg_h:.2f}) AND SocialMedia IS High (μ={mu_sm_h:.2f}) → DigitalOverload IS High","#f87171"))
+    if mu_ic_h > 0.1 and mu_sm_h > 0.1: rules_fired.append(("overload",f"IF IdleChecking IS High (μ={mu_ic_h:.2f}) AND SocialMedia IS High (μ={mu_sm_h:.2f}) → DigitalOverload IS High","#f87171"))
+    if mu_sm_h > 0.1 and mu_sg_l > 0.5 and mu_ln_l > 0.5: rules_fired.append(("overload",f"IF SocialMedia IS High (μ={mu_sm_h:.2f}) AND Glances IS Low (μ={mu_sg_l:.2f}) → DigitalOverload IS Medium","#fbbf24"))
+    if mu_sg_l > 0.5 and mu_sm_l > 0.5: rules_fired.append(("overload",f"IF ScreenGlances IS Low (μ={mu_sg_l:.2f}) AND SocialMedia IS Low (μ={mu_sm_l:.2f}) → DigitalOverload IS Very Low","#34d399"))
 
     if not rules_fired:
-        rules_fired.append(("mixed","Multiple moderate rules firing — values are in the overlap zones","#fbbf24"))
+        rules_fired.append(("mixed","Values in overlap zones — multiple rules firing with moderate activation","#fbbf24"))
 
     type_labels = {"focus":"FQ","sleep":"SQ","overload":"DO","mixed":"MX"}
     type_colors = {"focus":"rgba(96,165,250,0.6)","sleep":"rgba(139,92,246,0.6)","overload":"rgba(239,68,68,0.6)","mixed":"rgba(245,158,11,0.6)"}
@@ -569,6 +692,14 @@ except Exception as e:
     st.warning(f"MF visualisation unavailable: {e}")
 
 # ============================================================
+# EXPANDERS
+# ============================================================
+st.markdown('<div style="height:0.5rem"></div>', unsafe_allow_html=True)
+
+with st.expander("↗ Raw fuzzy result (JSON)"):
+        st.json(result)
+
+# ============================================================
 # FUZZY vs CRISP COMPARISON
 # ============================================================
 st.markdown('<div style="height:0.5rem"></div>', unsafe_allow_html=True)
@@ -581,7 +712,7 @@ margin-bottom:0.8rem;padding-bottom:0.6rem;border-bottom:1px solid rgba(0,212,25
 
 try:
     from comparison_viz import (make_sweep_figure, make_threshold_demo_figure,
-                                 make_profile_comparison_figure)
+                                make_profile_comparison_figure)
     from crisp_engine import evaluate_crisp_system
 
     cr = evaluate_crisp_system(
@@ -592,24 +723,6 @@ try:
     # Live side-by-side for current inputs
     diff = round(o["HabitBalance"] - cr["outputs"]["HabitBalance"], 2)
     diff_color = "#34d399" if abs(diff) < 0.5 else "#fbbf24" if abs(diff) < 1.5 else "#f87171"
-
-    fuzzy_final_label = result["labels"]["HabitBalance"]
-    crisp_final_label = cr["labels"]["HabitBalance"]
-
-    def final_label_color(label):
-        if label == "Very High":
-            return "#22c55e"
-        if label == "High":
-            return "#34d399"
-        if label == "Medium":
-            return "#fbbf24"
-        if label == "Low":
-            return "#f87171"
-        return "#ef4444"
-
-    fuzzy_label_color = final_label_color(fuzzy_final_label)
-    crisp_label_color = final_label_color(crisp_final_label)
-
     st.markdown(f"""
     <div style="display:flex;gap:12px;margin-bottom:0.8rem">
       <div style="flex:1;padding:0.9rem 1.2rem;background:rgba(0,212,255,0.06);
@@ -618,12 +731,6 @@ try:
              color:rgba(0,212,255,0.55);letter-spacing:0.15em;margin-bottom:4px">FUZZY SYSTEM</div>
         <div style="font-size:2rem;font-weight:800;color:#00d4ff">{o["HabitBalance"]}</div>
         <div style="font-size:0.75rem;color:rgba(226,232,240,0.45)">HabitBalance</div>
-        <div style="display:inline-block;margin-top:0.45rem;padding:3px 12px;border-radius:999px;
-     font-family:'JetBrains Mono',monospace;font-size:0.65rem;font-weight:700;
-     color:{fuzzy_label_color};background:{fuzzy_label_color}18;
-     border:1px solid {fuzzy_label_color}40">
-     {fuzzy_final_label}
-      </div>
       </div>
       <div style="flex:1;padding:0.9rem 1.2rem;background:rgba(248,113,113,0.06);
            border:1px solid rgba(248,113,113,0.2);border-radius:12px;text-align:center">
@@ -631,12 +738,6 @@ try:
              color:rgba(248,113,113,0.6);letter-spacing:0.15em;margin-bottom:4px">CRISP SYSTEM</div>
         <div style="font-size:2rem;font-weight:800;color:#f87171">{cr["outputs"]["HabitBalance"]}</div>
         <div style="font-size:0.75rem;color:rgba(226,232,240,0.45)">HabitBalance</div>
-        <div style="display:inline-block;margin-top:0.45rem;padding:3px 12px;border-radius:999px;
-     font-family:'JetBrains Mono',monospace;font-size:0.65rem;font-weight:700;
-     color:{crisp_label_color};background:{crisp_label_color}18;
-     border:1px solid {crisp_label_color}40">
-     {crisp_final_label}
-      </div>
       </div>
       <div style="flex:1;padding:0.9rem 1.2rem;background:rgba(255,255,255,0.02);
            border:1px solid rgba(255,255,255,0.05);border-radius:12px;text-align:center">
@@ -648,14 +749,6 @@ try:
     </div>
     """, unsafe_allow_html=True)
 
-
 except Exception as e:
     st.warning(f"Comparison section unavailable: {e}")
 
-# ============================================================
-# EXPANDERS
-# ============================================================
-st.markdown('<div style="height:0.5rem"></div>', unsafe_allow_html=True)
-
-with st.expander("↗ Raw fuzzy result (JSON)"):
-    st.json(result)
