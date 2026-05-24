@@ -95,14 +95,12 @@ fuzzy-detox uses a **two-layer hierarchical fuzzy system** — a recognised desi
 | `DigitalOverload` | 0–10 | Level of cognitive overload from digital stimulation |
 | **`HabitBalance`** | **0–10** | **Overall digital habit health — main score** |
 
-A score ≥ 7 indicates healthy digital habits. Below 4 signals patterns that likely affect focus and sleep.
-
 ---
 
 ## Using the Engine Directly
 
 ```python
-from src.fuzzy_engine_v4 import evaluate_fuzzy_system
+from src.fuzzy_engine import evaluate_fuzzy_system
 
 result = evaluate_fuzzy_system(
     screen_glances_value = 78,   # checks/day
@@ -210,12 +208,14 @@ fuzzy-detox-main/
 │
 ├── src/
 │   ├── app.py                  # Streamlit dashboard — run this
-│   ├── fuzzy_engine_v4.py      # Hierarchical Mamdani FIS (4 subsystems)
+│   ├── fuzzy_engine.py      # Hierarchical Mamdani FIS (4 subsystems)
 │   ├── crisp_engine.py         # Crisp if-else baseline for comparison
 │   ├── mf_viz.py               # Membership function visualisation (matplotlib)
 │   ├── comparison_viz.py       # Fuzzy vs. crisp comparison charts
 │   ├── sensitivity.py          # Sensitivity analysis module
 │   ├── comparison_app.py       # Standalone fuzzy vs. crisp Streamlit app
+|
+├── previous versions/
 │   └── [app_v1–v3, engine_v1–v3, crisp_app]  — iteration history
 │
 ├── notebooks/
@@ -233,13 +233,14 @@ fuzzy-detox-main/
 │   └── [sensitivity, MF, output distribution plots]
 │
 ├── docs/
-│   ├── USER_MANUAL.md                # Installation and usage guide
-│   ├── CHANGELOG.md                  # v1 → v4 iteration log
-│   ├── comparison_threshold.png      # Threshold problem visualisation
-│   ├── comparison_sweep.png          # Full sweep comparison chart
-│   ├── comparison_profiles.png       # 5-profile comparison
-│   ├── sensitivity_curves.png        # Response curves per input
-│   └── sensitivity_ranking.png       # Input influence ranking
+│   ├── USER_MANUAL.md                      # Installation and usage guide
+│   ├── Membership Functions and Rules.pdf  # Literature based Rule Base
+│   ├── CHANGELOG.md                        # v1 → v4 iteration log
+│   ├── comparison_threshold.png            # Threshold problem visualisation
+│   ├── comparison_sweep.png                # Full sweep comparison chart
+│   ├── comparison_profiles.png             # 5-profile comparison
+│   ├── sensitivity_curves.png              # Response curves per input
+│   └── sensitivity_ranking.png             # Input influence ranking
 │
 ├── tests/
 │   └── test_fuzzy_model.py           # 27 unit tests (pytest)
@@ -251,15 +252,6 @@ fuzzy-detox-main/
 ---
 
 ## Data Strategy
-
-No single public dataset contains all four input variables simultaneously. We use a **hybrid anchoring approach**:
-
-| Variable | Strategy |
-|---|---|
-| `ScreenGlances` | Anchored to real distributions from Global Mobile Phone Addiction Dataset (Kaggle, n=3,000) — `Phone_Unlocks_Per_Day` |
-| `SocialMediaUsage` | Derived from same dataset — `Social_Media_Usage_Hours / Daily_Screen_Time_Hours` |
-| `IdleChecking` | Simulated — distributions from Ellis & Shaw, Lancaster University (2018) |
-| `LateNightUse` | Simulated — distributions from Combertaldi et al., University of Fribourg (2021) |
 
 The dataset covers 4 user archetypes identified from user interviews:
 
