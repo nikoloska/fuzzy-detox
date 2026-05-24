@@ -83,7 +83,7 @@ fuzzy-detox uses a **two-layer hierarchical fuzzy system** — a recognised desi
 |---|---|---|---|
 | `ScreenGlances` | checks/day | 0–150 |
 | `IdleChecking` | checks/day | 0–80 |
-| `LateNightUse` | min after 22:00 | 0–180 |
+| `LateNightUse` | min before bedtime use | 0–180 |
 | `SocialMediaUsage` | % of screen time | 0–100 |
 
 ## Outputs
