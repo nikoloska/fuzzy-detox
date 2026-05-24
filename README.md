@@ -1,4 +1,4 @@
-# fuzzy-detox 🧠📱
+# Fuzzy-detox Recommendation System
 
 **Hierarchical Mamdani Fuzzy Inference System for Digital Habit Analysis** 
   
@@ -263,17 +263,3 @@ The dataset covers 4 user archetypes identified from user interviews:
 | 📲 Distracted Achiever | High glances, high idle checking | Low |
 
 ---
-
-## References
-
-- Mendel, J.M. (2001). *Uncertain Rule-Based Fuzzy Systems*. Springer. — hierarchical fuzzy systems
-- Sweller, J. (1994). Cognitive load theory. *Educational Psychology Review*, 6(4).
-- Ward, A.F. et al. (2017). Brain drain: Smartphone presence reduces cognitive capacity. *JACR*, 2(2).
-- Kushlev, K. et al. (2015). Checking email less frequently reduces stress. *Computers in Human Behavior*, 43.
-- Combertaldi, S.L., Ort, A., Cordi, M., Fahr, A., & Rasch, B. (2021). Pre-sleep social media use does not strongly disturb sleep. *Sleep Medicine*, 87. **University of Fribourg.**
-- Ellis, D.A., & Shaw, H. (2018). Typical smartphone usage dataset. Lancaster University.
-- Mark, G., Gudith, D., & Klocke, U. (2008). The cost of interrupted work. *CHI '08*.
-- Twenge, J.M., & Campbell, W.K. (2018). Associations between screen time and lower psychological well-being. *Preventive Medicine Reports*, 12.
-- Przybylski, A.K., & Weinstein, N. (2017). A large-scale test of the Goldilocks hypothesis. *Psychological Science*, 28(2).
-- Newport, C. (2016). *Deep Work*. Grand Central Publishing.
-- Portmann, E. et al., Eds. (2026). *Fuzzy Sets and Systems I–III*. Springer Nature Switzerland.
