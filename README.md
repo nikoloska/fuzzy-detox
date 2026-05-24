@@ -77,12 +77,14 @@ fuzzy-detox uses a **two-layer hierarchical fuzzy system** — a recognised desi
 
 ## Inputs
 
+** All Membership Functions and the entire rule database can be found in docs/Membership Functions and Rules.pdf.
+
 | Variable | Unit | Range | Literature anchor |
 |---|---|---|---|
-| `ScreenGlances` | checks/day | 0–150 | Ellis & Shaw, Lancaster University (2018) |
-| `IdleChecking` | checks/day | 0–80 | Mark et al., CHI (2008) — 23 min recovery |
-| `LateNightUse` | min after 22:00 | 0–180 | Combertaldi et al., Univ. Fribourg (2021) |
-| `SocialMediaUsage` | % of screen time | 0–100 | Twenge & Campbell (2018) |
+| `ScreenGlances` | checks/day | 0–150 |
+| `IdleChecking` | checks/day | 0–80 |
+| `LateNightUse` | min after 22:00 | 0–180 |
+| `SocialMediaUsage` | % of screen time | 0–100 |
 
 ## Outputs
 
