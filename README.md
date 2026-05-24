@@ -3,7 +3,8 @@
 **Hierarchical Mamdani Fuzzy Inference System for Digital Habit Analysis** 
   
 >University of Fribourg · Fuzzy Sets and Systems II · Spring 2026  
->*Course: Fuzzy Sets and Systems II — Prof. Dr. Edy Portmann, Human-IST Institute*
+>*Course: Fuzzy Sets and Systems II  
+>Prof. Dr. Edy Portmann, Human-IST Institute*
 
 **Allizha Theiventhiram** — University of Neuchâtel  
 **Tishana Suthenthiran** — University of Fribourg  
