@@ -30,7 +30,6 @@ git clone https://github.com/nikoloska/fuzzy-detox.git
 ### Prerequisite: Python version >= 3.11
 cd fuzzy-detox # if not already there
 pip install -r requirements.txt
-pip install scipy matplotlib
 ```
 
 ### 2. Launch the dashboard
