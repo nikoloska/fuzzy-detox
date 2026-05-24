@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from matplotlib.gridspec import GridSpec
 
-from fuzzy_engine_v4 import evaluate_fuzzy_system
+from fuzzy_engine import evaluate_fuzzy_system
 from crisp_engine    import evaluate_crisp_system
 
 # ── palette ────────────────────────────────────────────────

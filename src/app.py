@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import streamlit as st
 import math
 
-from fuzzy_engine_v4 import evaluate_fuzzy_system
+from fuzzy_engine import evaluate_fuzzy_system
 
 st.set_page_config(
     page_title="fuzzy-detox · Digital Habit Balance",

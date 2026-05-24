@@ -128,7 +128,7 @@ def make_input_mf_figure(sg: float, ic: float, ln: float, sm: float):
 def make_output_mf_figure(focus: float, sleep: float, overload: float, habit: float):
     """Figure: 4 output MFs with defuzzified values marked."""
 
-    from fuzzy_engine_v4 import (
+    from fuzzy_engine import (
         focus_quality,
         sleep_quality,
         digital_overload,

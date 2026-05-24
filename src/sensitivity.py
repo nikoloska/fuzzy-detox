@@ -6,7 +6,7 @@ to show which has the greatest impact on HabitBalance.
 import numpy as np
 import sys, os
 sys.path.insert(0, os.path.dirname(__file__))
-from fuzzy_engine_v4 import evaluate_fuzzy_system
+from fuzzy_engine import evaluate_fuzzy_system
 
 # Ideal baseline: all inputs at low/healthy values
 BASELINE = {"ScreenGlances": 10, "IdleChecking": 5,
