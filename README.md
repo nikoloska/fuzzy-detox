@@ -27,6 +27,7 @@ Unlike existing tools (Apple Screen Time, Google Digital Wellbeing) that only co
 
 ```bash
 git clone https://github.com/nikoloska/fuzzy-detox.git
+### Prerequisite: Python version >= 3.11
 cd fuzzy-detox # if not already there
 pip install -r requirements.txt
 pip install scipy matplotlib
