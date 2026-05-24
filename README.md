@@ -77,7 +77,7 @@ fuzzy-detox uses a **two-layer hierarchical fuzzy system** — a recognised desi
 
 ## Inputs
 
-** All Membership Functions and the entire rule database can be found in docs/Membership Functions and Rules.pdf.
+All Membership Functions and the entire rule database can be found in docs/Membership Functions and Rules.pdf.
 
 | Variable | Unit | Range | Literature anchor |
 |---|---|---|---|
