@@ -4,7 +4,11 @@ import matplotlib.pyplot as plt
 import streamlit as st
 import math
 
-from fuzzy_engine import evaluate_fuzzy_system
+from fuzzy_engine_v4 import evaluate_fuzzy_system
+
+# ============================================================
+# This application also includes Sensitivity analysis.
+# ============================================================
 
 st.set_page_config(
     page_title="fuzzy-detox · Digital Habit Balance",
@@ -565,8 +569,46 @@ try:
         st.pyplot(fig_out, use_container_width=True)
         plt.close(fig_out)
 
+    with st.expander("↗ Hierarchical FIS — all outputs at a glance"):
+        fig_h = make_hierarchy_figure(
+            o["FocusQuality"], o["SleepQuality"],
+            o["DigitalOverload"], o["HabitBalance"]
+        )
+        st.pyplot(fig_h, use_container_width=True)
+        plt.close(fig_h)
+
 except Exception as e:
     st.warning(f"MF visualisation unavailable: {e}")
+
+# ============================================================
+# EXPANDERS
+# ============================================================
+st.markdown('<div style="height:0.5rem"></div>', unsafe_allow_html=True)
+col_e1, col_e2 = st.columns(2)
+
+with col_e1:
+    with st.expander("↗ System explanation"):
+        st.markdown("""
+**fuzzy-detox** uses a **hierarchical Mamdani Fuzzy Inference System** with two layers.
+
+**Layer 1 — three parallel FIS**
+Each fuzzifies the 4 raw inputs (Low / Medium / High), applies IF-THEN rules, and produces one crisp output via centroid defuzzification:
+- FIS-1 → FocusQuality (0–10)
+- FIS-2 → SleepQuality (0–10)
+- FIS-3 → DigitalOverload (0–10)
+
+**Layer 2 — 4th Mamdani FIS (HabitBalance)**
+The three intermediate scores are re-injected as inputs into a dedicated FIS with **27 IF-THEN rules** and centroid defuzzification.
+HabitBalance is produced end-to-end by fuzzy inference — not a crisp formula.
+
+> *"Hierarchical fuzzy systems allow complex problems to be decomposed into simpler sub-problems while preserving fuzziness throughout."*
+> — Mendel, J.M. (2001). Uncertain Rule-Based Fuzzy Systems.
+
+All membership functions are grounded in peer-reviewed literature (Kushlev et al., 2015; Christensen et al., 2016; Digital Wellness Institute, 2024).""")
+
+with col_e2:
+    with st.expander("↗ Raw fuzzy result (JSON)"):
+        st.json(result)
 
 # ============================================================
 # FUZZY vs CRISP COMPARISON
@@ -648,14 +690,69 @@ try:
     </div>
     """, unsafe_allow_html=True)
 
+    with st.expander("↗ The threshold problem — why fuzzy matters"):
+        st.markdown(
+            "<p style='font-size:0.78rem;color:rgba(226,232,240,0.45)'>"
+            "A crisp system uses hard thresholds: 1 extra glance can drop your score by 1.5 points. "
+            "The fuzzy system transitions smoothly — more realistic and less arbitrary."
+            "</p>", unsafe_allow_html=True)
+        fig_t = make_threshold_demo_figure()
+        st.pyplot(fig_t, use_container_width=True)
+        plt.close(fig_t)
+
+    with st.expander("↗ Full sweep — all 4 outputs across ScreenGlances range"):
+        fig_s = make_sweep_figure()
+        st.pyplot(fig_s, use_container_width=True)
+        plt.close(fig_s)
+
+    with st.expander("↗ 5 user profiles compared"):
+        fig_p = make_profile_comparison_figure()
+        st.pyplot(fig_p, use_container_width=True)
+        plt.close(fig_p)
 
 except Exception as e:
     st.warning(f"Comparison section unavailable: {e}")
 
 # ============================================================
-# EXPANDERS
+# SENSITIVITY ANALYSIS
 # ============================================================
 st.markdown('<div style="height:0.5rem"></div>', unsafe_allow_html=True)
+st.markdown("""
+<div class="section-label">◈ sensitivity analysis</div>
+""", unsafe_allow_html=True)
 
-with st.expander("↗ Raw fuzzy result (JSON)"):
-    st.json(result)
+try:
+    from sensitivity import make_sensitivity_figures, sensitivity_range, INPUT_NAMES, SHORT
+
+    with st.expander("↗ Which input influences HabitBalance the most?", expanded=False):
+        st.markdown(
+            "<p style='font-size:0.82rem;color:rgba(226,232,240,0.45);margin-bottom:0.8rem'>"
+            "Each input is swept across its full range while others are fixed at ideal values. "
+            "The chart shows how much HabitBalance drops — larger range = more influential variable."
+            "</p>", unsafe_allow_html=True)
+
+        fig_s1, fig_s2, all_ranges = make_sensitivity_figures()
+
+        # Quick summary badges
+        hb_r = {iname: all_ranges[iname]["HabitBalance"] for iname in INPUT_NAMES}
+        sorted_sens = sorted(hb_r.items(), key=lambda x: x[1], reverse=True)
+        badges = ""
+        colors = ["#6366f1","#0ea5e9","#f59e0b","#10b981"]
+        for rank, (iname, val) in enumerate(sorted_sens):
+            col = colors[rank]
+            name = SHORT[INPUT_NAMES.index(iname)]
+            badges += f"""<span style="display:inline-flex;align-items:center;gap:5px;
+                padding:4px 12px;border-radius:999px;margin:3px;font-size:0.75rem;
+                font-weight:600;background:{col}18;color:{col};border:1px solid {col}40">
+                #{rank+1} {name} ({val:.2f} pts)</span>"""
+        st.markdown(f'<div style="margin-bottom:1rem">{badges}</div>', unsafe_allow_html=True)
+
+        st.pyplot(fig_s2, use_container_width=True)
+        plt.close(fig_s2)
+
+    with st.expander("↗ Full response curves — all 4 outputs"):
+        st.pyplot(fig_s1, use_container_width=True)
+        plt.close(fig_s1)
+
+except Exception as e:
+    st.warning(f"Sensitivity analysis unavailable: {e}")

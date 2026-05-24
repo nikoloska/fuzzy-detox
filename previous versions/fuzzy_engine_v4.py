@@ -9,7 +9,7 @@ from skfuzzy import control as ctrl
 
 screen_glances_universe = np.arange(0, 151, 1)
 idle_checking_universe = np.arange(0, 81, 1)
-late_night_use_universe = np.arange(0, 121, 1)
+late_night_use_universe = np.arange(0, 181, 1)
 social_media_universe = np.arange(0, 101, 1)
 score_universe = np.arange(0, 10.1, 0.1)
 
@@ -29,18 +29,18 @@ screen_glances["high"] = fuzz.trapmf(screen_glances.universe, [65, 90, 150, 150]
 
 idle_checking["low"] = fuzz.trapmf(idle_checking.universe, [0, 0, 10, 20])
 idle_checking["medium"] = fuzz.trimf(idle_checking.universe, [10, 30, 55])
-idle_checking["high"] = fuzz.trapmf(idle_checking.universe, [40, 58, 80, 85])
+idle_checking["high"] = fuzz.trapmf(idle_checking.universe, [40, 58, 80, 80])
 
 # ------------------------------------------------------------
-# LateNightUse membership functions per document spec
+# IMPROVEMENT — Adjust LateNightUse "high" membership function
 # ------------------------------------------------------------
-late_night_use["low"] = fuzz.trapmf(late_night_use.universe, [0, 0, 15, 30])
-late_night_use["medium"] = fuzz.trimf(late_night_use.universe, [15, 30, 60])
-late_night_use["high"] = fuzz.trapmf(late_night_use.universe, [31, 60, 120, 120])
+late_night_use["low"] = fuzz.trapmf(late_night_use.universe, [0, 0, 10, 25])
+late_night_use["medium"] = fuzz.trimf(late_night_use.universe, [15, 55, 95])
+late_night_use["high"] = fuzz.trapmf(late_night_use.universe, [80, 105, 180, 180])
 
-social_media["low"] = fuzz.trapmf(social_media.universe, [0, 0, 10, 25])
-social_media["medium"] = fuzz.trimf(social_media.universe, [15, 30, 55])
-social_media["high"] = fuzz.trapmf(social_media.universe, [40, 70, 100, 100])
+social_media["low"] = fuzz.trapmf(social_media.universe, [0, 0, 15, 30])
+social_media["medium"] = fuzz.trimf(social_media.universe, [15, 40, 70])
+social_media["high"] = fuzz.trapmf(social_media.universe, [55, 75, 100, 100])
 
 
 # ============================================================
@@ -58,20 +58,16 @@ digital_overload.defuzzify_method = "centroid"
 focus_quality["very_low"] = fuzz.trapmf(focus_quality.universe, [0, 0, 1.5, 3.0])
 focus_quality["low"] = fuzz.trimf(focus_quality.universe, [2.0, 3.5, 5.0])
 focus_quality["medium"] = fuzz.trimf(focus_quality.universe, [4.0, 5.5, 7.0])
-focus_quality["medium_high"] = fuzz.trimf(focus_quality.universe, [5.5, 7.5, 9.0])
-focus_quality["high"] = fuzz.trapmf(focus_quality.universe, [8.0, 9.0, 10, 10])
+focus_quality["medium_high"] = fuzz.trimf(focus_quality.universe, [5.5, 7.0, 8.5])
+focus_quality["high"] = fuzz.trapmf(focus_quality.universe, [7.0, 8.5, 10, 10])
 
-sleep_quality["very_low"] = fuzz.trapmf(sleep_quality.universe, [0, 0, 2.5, 4.5])
-sleep_quality["low"] = fuzz.trimf(sleep_quality.universe, [3.5, 5.0, 6.5])
-sleep_quality["medium"] = fuzz.trimf(sleep_quality.universe, [5.5, 7.0, 8.0])
-sleep_quality["medium_high"] = fuzz.trimf(sleep_quality.universe, [7.0, 8.0, 9.0])
-sleep_quality["high"] = fuzz.trapmf(sleep_quality.universe, [8.5, 9.5, 10, 10])
+sleep_quality["low"] = fuzz.trapmf(sleep_quality.universe, [0, 0, 2.5, 4.5])
+sleep_quality["medium"] = fuzz.trimf(sleep_quality.universe, [3.0, 5.0, 7.5])
+sleep_quality["high"] = fuzz.trapmf(sleep_quality.universe, [6.0, 8.0, 10, 10])
 
-digital_overload["very_low"] = fuzz.trapmf(digital_overload.universe, [0, 0, 1.0, 2.5])
-digital_overload["low"] = fuzz.trimf(digital_overload.universe, [1.5, 3.0, 4.5])
-digital_overload["medium"] = fuzz.trimf(digital_overload.universe, [3.5, 5.0, 6.5])
-digital_overload["medium_high"] = fuzz.trimf(digital_overload.universe, [5.5, 7.0, 8.0])
-digital_overload["high"] = fuzz.trapmf(digital_overload.universe, [7.0, 8.5, 10, 10])
+digital_overload["low"] = fuzz.trapmf(digital_overload.universe, [0, 0, 2.5, 4.5])
+digital_overload["medium"] = fuzz.trimf(digital_overload.universe, [3.0, 5.0, 7.5])
+digital_overload["high"] = fuzz.trapmf(digital_overload.universe, [6.0, 8.0, 10, 10])
 
 
 # ============================================================
@@ -111,69 +107,38 @@ focus_rules = [
 ]
 
 sleep_rules = [
-    # S1: All disruption channels inactive
     ctrl.Rule(late_night_use["low"] & screen_glances["low"] & idle_checking["low"], sleep_quality["high"]),
-    # S2: Two disruptions inactive
-    ctrl.Rule(late_night_use["low"] & social_media["low"], sleep_quality["high"]),
-    # S3: Low late-night, medium glances
-    ctrl.Rule(late_night_use["low"] & screen_glances["medium"], sleep_quality["medium_high"]),
-    # S4: Low late-night, medium social media
-    ctrl.Rule(late_night_use["low"] & social_media["medium"], sleep_quality["medium_high"]),
-    # S5: Medium late-night, medium glances
     ctrl.Rule(late_night_use["medium"] & screen_glances["medium"], sleep_quality["medium"]),
-    # S6: Medium late-night, medium social media
-    ctrl.Rule(late_night_use["medium"] & social_media["medium"], sleep_quality["medium"]),
-    # S7: Medium late-night, low glances
-    ctrl.Rule(late_night_use["medium"] & screen_glances["low"], sleep_quality["medium"]),
-    # S8: High late-night, medium social media
-    ctrl.Rule(late_night_use["high"] & social_media["medium"], sleep_quality["low"]),
-    # S9: Medium late-night, high social media
-    ctrl.Rule(late_night_use["medium"] & social_media["high"], sleep_quality["low"]),
-    # S10: Low glances, high late-night
+    ctrl.Rule(late_night_use["high"] & social_media["high"], sleep_quality["low"]),
+    ctrl.Rule(late_night_use["high"] & screen_glances["high"], sleep_quality["low"]),
+    ctrl.Rule(late_night_use["high"] & idle_checking["high"], sleep_quality["low"]),
+    ctrl.Rule(late_night_use["medium"] & social_media["high"], sleep_quality["medium"]),
     ctrl.Rule(screen_glances["low"] & late_night_use["high"], sleep_quality["low"]),
-    # S11: High late-night, high social media
-    ctrl.Rule(late_night_use["high"] & social_media["high"], sleep_quality["very_low"]),
-    # S12: High late-night, high glances
-    ctrl.Rule(late_night_use["high"] & screen_glances["high"], sleep_quality["very_low"]),
-    # S13: High late-night, high idle checking
-    ctrl.Rule(late_night_use["high"] & idle_checking["high"], sleep_quality["very_low"]),
 ]
 
 digital_overload_rules = [
-    # O1: High glances + high social media
     ctrl.Rule(screen_glances["high"] & social_media["high"], digital_overload["high"]),
-    # O2: High idle checking + high social media
     ctrl.Rule(idle_checking["high"] & social_media["high"], digital_overload["high"]),
-    # O3: High late-night + high social media
     ctrl.Rule(late_night_use["high"] & social_media["high"], digital_overload["high"]),
-    # O4: All three principal channels high
     ctrl.Rule(screen_glances["high"] & idle_checking["high"] & late_night_use["high"], digital_overload["high"]),
-    # O5: High glances + high idle checking
-    ctrl.Rule(screen_glances["high"] & idle_checking["high"], digital_overload["medium_high"]),
-    # O6: High idle checking + high late-night
-    ctrl.Rule(idle_checking["high"] & late_night_use["high"], digital_overload["medium_high"]),
-    # O7: High glances + medium late-night
-    ctrl.Rule(screen_glances["high"] & late_night_use["medium"], digital_overload["medium_high"]),
-    # O8: High social media but low glances & low late-night
-    ctrl.Rule(social_media["high"] & screen_glances["low"] & late_night_use["low"], digital_overload["medium"]),
-    # O9: High late-night + low social media
+
+    # ------------------------------------------------------------
+    # IMPROVEMENT — Tighten rule base: social media high but other inputs moderate/low
+    # ------------------------------------------------------------
+    # New rule: SocialMedia alone high but glances & late-night low → Medium (not High)
+    ctrl.Rule(
+        social_media["high"] & screen_glances["low"] & late_night_use["low"],
+        digital_overload["medium"]
+    ),
+
     ctrl.Rule(late_night_use["high"] & social_media["low"], digital_overload["medium"]),
-    # O10: High glances + low social media
     ctrl.Rule(screen_glances["high"] & social_media["low"], digital_overload["medium"]),
-    # O11: High idle checking + low social media
     ctrl.Rule(idle_checking["high"] & social_media["low"], digital_overload["medium"]),
-    # O12: Medium glances + medium social media
     ctrl.Rule(screen_glances["medium"] & social_media["medium"], digital_overload["medium"]),
-    # O13: Low glances + high social media
     ctrl.Rule(screen_glances["low"] & social_media["high"], digital_overload["medium"]),
-    # O14: Medium glances + low social media + low late-night
-    ctrl.Rule(screen_glances["medium"] & social_media["low"] & late_night_use["low"], digital_overload["low"]),
-    # O15: Medium idle checking + low glances
-    ctrl.Rule(idle_checking["medium"] & screen_glances["low"], digital_overload["low"]),
-    # O16: Low glances + low social media
-    ctrl.Rule(screen_glances["low"] & social_media["low"], digital_overload["very_low"]),
-    # O17: All three principal channels low
-    ctrl.Rule(screen_glances["low"] & idle_checking["low"] & late_night_use["low"], digital_overload["very_low"]),
+
+    ctrl.Rule(screen_glances["low"] & social_media["low"], digital_overload["low"]),
+    ctrl.Rule(screen_glances["low"] & idle_checking["low"] & late_night_use["low"], digital_overload["low"]),
 ]
 
 focus_system = ctrl.ControlSystem(focus_rules)
@@ -220,83 +185,56 @@ habit_balance_out.defuzzify_method = "centroid"
 habit_balance_out["very_low"] = fuzz.trapmf(habit_balance_out.universe, [0,   0,   1.5, 3.0])
 habit_balance_out["low"]      = fuzz.trimf (habit_balance_out.universe, [2.0, 3.5, 5.0])
 habit_balance_out["medium"]   = fuzz.trimf (habit_balance_out.universe, [4.0, 5.5, 7.0])
-habit_balance_out["medium_high"] = fuzz.trimf(habit_balance_out.universe, [5.5, 7.0, 8.5])
-habit_balance_out["high"]     = fuzz.trapmf(habit_balance_out.universe, [7.0, 8.5, 10,  10])
+habit_balance_out["high"]     = fuzz.trimf (habit_balance_out.universe, [6.0, 7.5, 9.0])
+habit_balance_out["very_high"]= fuzz.trapmf(habit_balance_out.universe, [8.0, 9.0, 10,  10])
 
 # --- Rule base for 4th FIS ---
-# Covers all 27 logical combinations (H1–H27).
+# Covers the 27 logical combinations systematically.
 # Principle: focus and sleep drive balance up; overload drives it down.
 habit_rules = [
-    # === Cluster 1: High focus + high sleep ===
-    # H1
-    ctrl.Rule(fq_in["high"]   & sq_in["high"]   & do_in["low"],    habit_balance_out["high"]),
-    # H2
-    ctrl.Rule(fq_in["high"]   & sq_in["high"]   & do_in["medium"], habit_balance_out["medium_high"]),
-    # H3
+    # === Best case: high focus + high sleep ===
+    ctrl.Rule(fq_in["high"]   & sq_in["high"]   & do_in["low"],    habit_balance_out["very_high"]),
+    ctrl.Rule(fq_in["high"]   & sq_in["high"]   & do_in["medium"], habit_balance_out["high"]),
     ctrl.Rule(fq_in["high"]   & sq_in["high"]   & do_in["high"],   habit_balance_out["medium"]),
 
     # === High focus + medium sleep ===
-    # H13
-    ctrl.Rule(fq_in["high"]   & sq_in["medium"] & do_in["low"],    habit_balance_out["medium_high"]),
-    # H14
+    ctrl.Rule(fq_in["high"]   & sq_in["medium"] & do_in["low"],    habit_balance_out["high"]),
     ctrl.Rule(fq_in["high"]   & sq_in["medium"] & do_in["medium"], habit_balance_out["medium"]),
-    # H15
     ctrl.Rule(fq_in["high"]   & sq_in["medium"] & do_in["high"],   habit_balance_out["low"]),
 
-    # === Cluster 2/3: High focus + low sleep ===
-    # H7
+    # === High focus + low sleep ===
     ctrl.Rule(fq_in["high"]   & sq_in["low"]    & do_in["low"],    habit_balance_out["medium"]),
-    # H12
     ctrl.Rule(fq_in["high"]   & sq_in["low"]    & do_in["medium"], habit_balance_out["low"]),
-    # H4
     ctrl.Rule(fq_in["high"]   & sq_in["low"]    & do_in["high"],   habit_balance_out["very_low"]),
 
     # === Medium focus + high sleep ===
-    # H16
-    ctrl.Rule(fq_in["medium"] & sq_in["high"]   & do_in["low"],    habit_balance_out["medium_high"]),
-    # H17
+    ctrl.Rule(fq_in["medium"] & sq_in["high"]   & do_in["low"],    habit_balance_out["high"]),
     ctrl.Rule(fq_in["medium"] & sq_in["high"]   & do_in["medium"], habit_balance_out["medium"]),
-    # H18
     ctrl.Rule(fq_in["medium"] & sq_in["high"]   & do_in["high"],   habit_balance_out["low"]),
 
-    # === Cluster 4: Medium focus + medium sleep ===
-    # H10
+    # === Medium focus + medium sleep ===
     ctrl.Rule(fq_in["medium"] & sq_in["medium"] & do_in["low"],    habit_balance_out["medium"]),
-    # H11
     ctrl.Rule(fq_in["medium"] & sq_in["medium"] & do_in["medium"], habit_balance_out["medium"]),
-    # H5
     ctrl.Rule(fq_in["medium"] & sq_in["medium"] & do_in["high"],   habit_balance_out["low"]),
 
     # === Medium focus + low sleep ===
-    # H19
     ctrl.Rule(fq_in["medium"] & sq_in["low"]    & do_in["low"],    habit_balance_out["low"]),
-    # H8
     ctrl.Rule(fq_in["medium"] & sq_in["low"]    & do_in["medium"], habit_balance_out["low"]),
-    # H20
     ctrl.Rule(fq_in["medium"] & sq_in["low"]    & do_in["high"],   habit_balance_out["very_low"]),
 
     # === Low focus + high sleep ===
-    # H21
     ctrl.Rule(fq_in["low"]    & sq_in["high"]   & do_in["low"],    habit_balance_out["medium"]),
-    # H22
     ctrl.Rule(fq_in["low"]    & sq_in["high"]   & do_in["medium"], habit_balance_out["low"]),
-    # H23
     ctrl.Rule(fq_in["low"]    & sq_in["high"]   & do_in["high"],   habit_balance_out["very_low"]),
 
     # === Low focus + medium sleep ===
-    # H24
     ctrl.Rule(fq_in["low"]    & sq_in["medium"] & do_in["low"],    habit_balance_out["low"]),
-    # H25
     ctrl.Rule(fq_in["low"]    & sq_in["medium"] & do_in["medium"], habit_balance_out["low"]),
-    # H26
     ctrl.Rule(fq_in["low"]    & sq_in["medium"] & do_in["high"],   habit_balance_out["very_low"]),
 
-    # === Cluster 2/6: Low focus + low sleep ===
-    # H9
+    # === Worst case: low focus + low sleep ===
     ctrl.Rule(fq_in["low"]    & sq_in["low"]    & do_in["low"],    habit_balance_out["low"]),
-    # H27
     ctrl.Rule(fq_in["low"]    & sq_in["low"]    & do_in["medium"], habit_balance_out["very_low"]),
-    # H6
     ctrl.Rule(fq_in["low"]    & sq_in["low"]    & do_in["high"],   habit_balance_out["very_low"]),
 ]
 
@@ -334,8 +272,8 @@ def _habit_balance_label(score: float) -> str:
     if score < 7.0:
         return "Medium"
     if score < 8.5:
-        return "Medium-High"
-    return "High"
+        return "High"
+    return "Very High"
 
 def _add_recommendation(
         recommendations: list,
@@ -669,7 +607,7 @@ def evaluate_fuzzy_system(
 ) -> dict:
     screen_glances_value = _clamp(screen_glances_value, 0, 150)
     idle_checking_value = _clamp(idle_checking_value, 0, 80)
-    late_night_use_value = _clamp(late_night_use_value, 0, 120)
+    late_night_use_value = _clamp(late_night_use_value, 0, 180)
     social_media_value = _clamp(social_media_value, 0, 100)
 
     focus_sim = ctrl.ControlSystemSimulation(focus_system)
