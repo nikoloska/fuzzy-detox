@@ -264,6 +264,17 @@ def _overload_label(score: float) -> str:
         return "Medium"
     return "High"
 
+def _habit_balance_label(score: float) -> str:
+    if score < 3.0:
+        return "Very Low"
+    if score < 5.0:
+        return "Low"
+    if score < 7.0:
+        return "Medium"
+    if score < 8.5:
+        return "High"
+    return "Very High"
+
 def _add_recommendation(
         recommendations: list,
         rec_id: str,
@@ -652,7 +663,7 @@ def evaluate_fuzzy_system(
             "FocusQuality": _positive_label(focus),
             "SleepQuality": _positive_label(sleep),
             "DigitalOverload": _overload_label(overload),
-            "HabitBalance": _positive_label(habit),
+            "HabitBalance": _habit_balance_label(habit),
         },
         "recommendation": _recommendation(recommendations),
         "recommendations": recommendations,

@@ -312,7 +312,7 @@ st.dataframe(
       .map(lambda v: "color: #059669; font-weight:600" if isinstance(v, float) and v > 0
                 else ("color: #dc2626; font-weight:600" if isinstance(v, float) and v < 0 else ""),
                 subset=["Difference (F−C)"]),
-    use_container_width=True,
+    width='stretch',
     hide_index=True,
 )
 

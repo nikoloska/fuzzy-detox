@@ -358,7 +358,7 @@ st.dataframe(
         "FocusQuality":"{:.2f}", "SleepQuality":"{:.2f}",
         "DigitalOverload":"{:.2f}", "HabitBalance":"{:.2f}",
     }).background_gradient(subset=["HabitBalance"], cmap="RdYlGn", vmin=0, vmax=10),
-    use_container_width=True, hide_index=True,
+    width='stretch', hide_index=True,
 )
 
 # ============================================================

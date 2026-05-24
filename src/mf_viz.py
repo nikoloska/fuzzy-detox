@@ -127,53 +127,78 @@ def make_input_mf_figure(sg: float, ic: float, ln: float, sm: float):
 
 def make_output_mf_figure(focus: float, sleep: float, overload: float, habit: float):
     """Figure: 4 output MFs with defuzzified values marked."""
+
+    from fuzzy_engine_v4 import (
+        focus_quality,
+        sleep_quality,
+        digital_overload,
+        habit_balance_out,
+    )
+
+    def mfs_from_variable(variable):
+        return {
+            label: term.mf
+            for label, term in variable.terms.items()
+        }
+
     fig = plt.figure(figsize=(11, 5.5), facecolor=BG)
-    fig.suptitle("Output Membership Functions — defuzzified values marked (──)",
-                 fontsize=9, color=TITLE, y=0.98, fontweight="bold")
+    fig.suptitle(
+        "Output Membership Functions - defuzzified values marked (──)",
+        fontsize=9,
+        color=TITLE,
+        y=0.98,
+        fontweight="bold",
+    )
 
-    gs = GridSpec(2, 2, figure=fig, hspace=0.55, wspace=0.38,
-                  left=0.07, right=0.97, top=0.90, bottom=0.08)
+    gs = GridSpec(
+        2, 2,
+        figure=fig,
+        hspace=0.55,
+        wspace=0.38,
+        left=0.07,
+        right=0.97,
+        top=0.90,
+        bottom=0.08,
+    )
 
-    u = np.arange(0, 10.1, 0.1)
+    panels = [
+        (
+            focus_quality.universe,
+            mfs_from_variable(focus_quality),
+            focus,
+            "score (0-10)",
+            "FocusQuality",
+            gs[0, 0],
+        ),
+        (
+            sleep_quality.universe,
+            mfs_from_variable(sleep_quality),
+            sleep,
+            "score (0-10)",
+            "SleepQuality",
+            gs[0, 1],
+        ),
+        (
+            digital_overload.universe,
+            mfs_from_variable(digital_overload),
+            overload,
+            "score (0-10)",
+            "DigitalOverload",
+            gs[1, 0],
+        ),
+        (
+            habit_balance_out.universe,
+            mfs_from_variable(habit_balance_out),
+            habit,
+            "score (0-10)",
+            "HabitBalance ← 4th Mamdani FIS",
+            gs[1, 1],
+        ),
+    ]
 
-    # FocusQuality
-    mfs_fq = {
-        "low":    fuzz.trapmf(u, [0,   0,   2.5, 4.5]),
-        "medium": fuzz.trimf (u, [3.0, 5.0, 7.5]),
-        "high":   fuzz.trapmf(u, [6.0, 8.0, 10,  10]),
-    }
-    ax = fig.add_subplot(gs[0, 0])
-    _ax_mf(ax, u, mfs_fq, focus, "score (0–10)", "FocusQuality")
-
-    # SleepQuality
-    mfs_sq = {
-        "low":    fuzz.trapmf(u, [0,   0,   2.5, 4.5]),
-        "medium": fuzz.trimf (u, [3.0, 5.0, 7.5]),
-        "high":   fuzz.trapmf(u, [6.0, 8.0, 10,  10]),
-    }
-    ax = fig.add_subplot(gs[0, 1])
-    _ax_mf(ax, u, mfs_sq, sleep, "score (0–10)", "SleepQuality")
-
-    # DigitalOverload
-    mfs_do = {
-        "low":    fuzz.trapmf(u, [0,   0,   2.5, 4.5]),
-        "medium": fuzz.trimf (u, [3.0, 5.0, 7.5]),
-        "high":   fuzz.trapmf(u, [6.0, 8.0, 10,  10]),
-    }
-    ax = fig.add_subplot(gs[1, 0])
-    _ax_mf(ax, u, mfs_do, overload, "score (0–10)", "DigitalOverload")
-
-    # HabitBalance (4th FIS output — 5 terms)
-    mfs_hb = {
-        "very_low":  fuzz.trapmf(u, [0,   0,   1.5, 3.0]),
-        "low":       fuzz.trimf (u, [2.0, 3.5, 5.0]),
-        "medium":    fuzz.trimf (u, [4.0, 5.5, 7.0]),
-        "high":      fuzz.trimf (u, [6.0, 7.5, 9.0]),
-        "very_high": fuzz.trapmf(u, [8.0, 9.0, 10,  10]),
-    }
-    ax = fig.add_subplot(gs[1, 1])
-    _ax_mf(ax, u, mfs_hb, habit, "score (0–10)",
-           "HabitBalance  ← 4th Mamdani FIS")
+    for universe, mfs, current_value, xlabel, title, position in panels:
+        ax = fig.add_subplot(position)
+        _ax_mf(ax, universe, mfs, current_value, xlabel, title)
 
     return fig
 

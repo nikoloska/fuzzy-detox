@@ -630,6 +630,24 @@ try:
     # Live side-by-side for current inputs
     diff = round(o["HabitBalance"] - cr["outputs"]["HabitBalance"], 2)
     diff_color = "#34d399" if abs(diff) < 0.5 else "#fbbf24" if abs(diff) < 1.5 else "#f87171"
+
+    fuzzy_final_label = result["labels"]["HabitBalance"]
+    crisp_final_label = cr["labels"]["HabitBalance"]
+
+    def final_label_color(label):
+        if label == "Very High":
+            return "#22c55e"
+        if label == "High":
+            return "#34d399"
+        if label == "Medium":
+            return "#fbbf24"
+        if label == "Low":
+            return "#f87171"
+        return "#ef4444"
+
+    fuzzy_label_color = final_label_color(fuzzy_final_label)
+    crisp_label_color = final_label_color(crisp_final_label)
+
     st.markdown(f"""
     <div style="display:flex;gap:12px;margin-bottom:0.8rem">
       <div style="flex:1;padding:0.9rem 1.2rem;background:rgba(0,212,255,0.06);
@@ -638,6 +656,12 @@ try:
              color:rgba(0,212,255,0.55);letter-spacing:0.15em;margin-bottom:4px">FUZZY SYSTEM</div>
         <div style="font-size:2rem;font-weight:800;color:#00d4ff">{o["HabitBalance"]}</div>
         <div style="font-size:0.75rem;color:rgba(226,232,240,0.45)">HabitBalance</div>
+        <div style="display:inline-block;margin-top:0.45rem;padding:3px 12px;border-radius:999px;
+     font-family:'JetBrains Mono',monospace;font-size:0.65rem;font-weight:700;
+     color:{fuzzy_label_color};background:{fuzzy_label_color}18;
+     border:1px solid {fuzzy_label_color}40">
+     {fuzzy_final_label}
+      </div>
       </div>
       <div style="flex:1;padding:0.9rem 1.2rem;background:rgba(248,113,113,0.06);
            border:1px solid rgba(248,113,113,0.2);border-radius:12px;text-align:center">
@@ -645,6 +669,12 @@ try:
              color:rgba(248,113,113,0.6);letter-spacing:0.15em;margin-bottom:4px">CRISP SYSTEM</div>
         <div style="font-size:2rem;font-weight:800;color:#f87171">{cr["outputs"]["HabitBalance"]}</div>
         <div style="font-size:0.75rem;color:rgba(226,232,240,0.45)">HabitBalance</div>
+        <div style="display:inline-block;margin-top:0.45rem;padding:3px 12px;border-radius:999px;
+     font-family:'JetBrains Mono',monospace;font-size:0.65rem;font-weight:700;
+     color:{crisp_label_color};background:{crisp_label_color}18;
+     border:1px solid {crisp_label_color}40">
+     {crisp_final_label}
+      </div>
       </div>
       <div style="flex:1;padding:0.9rem 1.2rem;background:rgba(255,255,255,0.02);
            border:1px solid rgba(255,255,255,0.05);border-radius:12px;text-align:center">
