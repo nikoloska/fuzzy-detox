@@ -7,11 +7,15 @@ public interface as fuzzy_engine.py:
     evaluate_crisp_system(screen_glances, idle_checking,
                           late_night_use, social_media) -> dict
 
-Thresholds are derived from the fuzzy membership function boundaries:
-  ScreenGlances : Low < 40,  Medium 40–65,  High > 65
-  IdleChecking  : Low < 20,  Medium 20–40,  High > 40
-  LateNightUse  : Low < 25,  Medium 25–65,  High > 65
-  SocialMedia   : Low < 30,  Medium 30–55,  High > 55
+Current crisp thresholds:
+  ScreenGlances : Low <= 32.00,  Medium 32.00–74.62,  High >= 74.62
+  IdleChecking  : Low <= 16.67,  Medium 16.67–46.28,  High >= 46.28
+  LateNightUse  : Low <= 22.50,  Medium 22.50–45.25,  High >= 45.25
+  SocialMedia   : Low <= 20.00,  Medium 20.00–48.18,  High >= 48.18
+
+This design intentionally makes the crisp baseline boundary-sensitive:
+a tiny change around a threshold can switch the class completely, while
+the fuzzy system changes gradually through overlapping memberships.
 """
 
 # ─── HELPERS ────────────────────────────────────────────────────────────────
@@ -86,10 +90,10 @@ _OVERLOAD_RULES = {
 }
 
 # ─── THRESHOLDS (derived from fuzzy MF crossover points) ────────────────────
-_SG_LOW_MAX  = 40;  _SG_HIGH_MIN  = 65
-_IC_LOW_MAX  = 20;  _IC_HIGH_MIN  = 40
-_LN_LOW_MAX  = 25;  _LN_HIGH_MIN  = 65
-_SM_LOW_MAX  = 30;  _SM_HIGH_MIN  = 55
+_SG_LOW_MAX  = 32.00;  _SG_HIGH_MIN  = 74.62
+_IC_LOW_MAX  = 16.67;  _IC_HIGH_MIN  = 46.28
+_LN_LOW_MAX  = 22.50;  _LN_HIGH_MIN  = 45.25
+_SM_LOW_MAX  = 20.00;  _SM_HIGH_MIN  = 48.18
 
 
 def _recommendation(focus: float, sleep: float,
@@ -130,7 +134,7 @@ def evaluate_crisp_system(
     """
     sg = _clamp(screen_glances_value, 0, 150)
     ic = _clamp(idle_checking_value,  0, 80)
-    ln = _clamp(late_night_use_value, 0, 180)
+    ln = _clamp(late_night_use_value, 0, 120)
     sm = _clamp(social_media_value,   0, 100)
 
     # Classify each input

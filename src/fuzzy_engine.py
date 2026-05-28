@@ -372,9 +372,12 @@ def _label_from_mf(score: float, antecedent_or_consequent) -> str:
 
 
 def _positive_label(score: float) -> str:
-    """Label for FocusQuality / SleepQuality outputs (MF-derived)."""
+    """Label for FocusQuality  outputs (MF-derived)."""
     return _label_from_mf(score, focus_quality)
 
+def _sleep_label(score: float) -> str:
+    """Label for  SleepQuality outputs (MF-derived)."""
+    return _label_from_mf(score, sleep_quality)
 
 def _overload_label(score: float) -> str:
     """Label for DigitalOverload output (MF-derived)."""
@@ -746,7 +749,7 @@ def evaluate_fuzzy_system(
     habit = round(_safe_output(habit_sim, "HabitBalance"), 2)
 
     focus_lbl   = _positive_label(focus)
-    sleep_lbl   = _positive_label(sleep)
+    sleep_lbl   = _sleep_label(sleep)
     overload_lbl= _overload_label(overload)
     habit_lbl   = _habit_label(habit)
 

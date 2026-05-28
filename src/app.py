@@ -129,25 +129,14 @@ if "history" not in st.session_state:
 # ============================================================
 # HELPERS
 # ============================================================
-def _ui_tier(val: float, invert: bool = False) -> str:
+def _tier_from_raw_label(raw_label: str, invert: bool = False) -> str:
     """
-    Derive the UI display tier from fuzzy MFs.
-    Uses Maximum Membership Principle (Zadeh, 1965).
+    Convert a fuzzy-engine label into a UI tier.
 
-    5 tiers mapped from 5 MF terms:
-      High        → very_good
-      Medium High → good
-      Medium      → moderate
-      Low         → poor
-      Very Low    → very_poor
-
-    For DigitalOverload (invert=True) semantics are reversed:
-      Very Low overload → very_good  (best case)
-      High overload     → very_poor  (worst case)
+    The label must come from the correct fuzzy output variable:
+    FocusQuality, SleepQuality, DigitalOverload, or HabitBalance.
+    This avoids using FocusQuality thresholds for every output.
     """
-    from fuzzy_engine import _label_from_mf, focus_quality
-    raw = _label_from_mf(val, focus_quality)  # same MF shape for all outputs
-
     mapping = {
         "High":        "very_good",
         "Medium High": "good",
@@ -162,27 +151,41 @@ def _ui_tier(val: float, invert: bool = False) -> str:
         "Medium High": "poor",
         "High":        "very_poor",
     }
-    return (mapping_inv if invert else mapping).get(raw, "moderate")
+    return (mapping_inv if invert else mapping).get(raw_label, "moderate")
 
 
-def score_color(val, invert=False):
+def _ui_tier(val: float, invert: bool = False, raw_label: str | None = None) -> str:
+    """
+    Derive the UI display tier.
+
+    Preferred path: pass raw_label from result["labels"].
+    Fallback path: use FocusQuality only for older calls where no label is available.
+    """
+    if raw_label is None:
+        from fuzzy_engine import _label_from_mf, focus_quality
+        raw_label = _label_from_mf(val, focus_quality)
+
+    return _tier_from_raw_label(raw_label, invert)
+
+
+def score_color(val, invert=False, raw_label: str | None = None):
     return {
         "very_good": "#34d399",
         "good":      "#86efac",
         "moderate":  "#fbbf24",
         "poor":      "#f97316",
         "very_poor": "#f87171",
-    }[_ui_tier(val, invert)]
+    }[_ui_tier(val, invert, raw_label)]
 
 
-def score_label(val, invert=False):
+def score_label(val, invert=False, raw_label: str | None = None):
     return {
         "very_good": ("Very Good", "lab-good"),
         "good":      ("Good",      "lab-good"),
         "moderate":  ("Moderate",  "lab-medium"),
         "poor":      ("Poor",      "lab-poor"),
         "very_poor": ("Very Poor", "lab-poor"),
-    }[_ui_tier(val, invert)]
+    }[_ui_tier(val, invert, raw_label)]
 
 def zone_tag(val, lo, hi):
     if val <= lo:  return "Low",    "zone-low"
@@ -311,12 +314,18 @@ def gauge_svg(score, color, size=195):
   <text x="{tx2-12}" y="{ty2+14}" fill="rgba(226,232,240,0.3)" font-size="9" font-family="JetBrains Mono,monospace">10</text>
 </svg>"""
 
-def radar_svg(focus, sleep, overload, habit, size=230):
+def radar_svg(focus, sleep, overload, habit, labels=None, size=230):
     cx, cy = size/2, size/2; r_max = size*0.34
-    labels = ["Focus","Sleep","Balance","Not\nOverloaded"]
+    axis_labels = ["Focus","Sleep","Balance","Not\nOverloaded"]
+    labels = labels or {}
     values = [focus/10, sleep/10, habit/10, (10-overload)/10]
     angles = [90, 0, 270, 180]
-    clrs   = [score_color(focus), score_color(sleep), score_color(habit), score_color(overload, invert=True)]
+    clrs   = [
+        score_color(focus, raw_label=labels.get("FocusQuality")),
+        score_color(sleep, raw_label=labels.get("SleepQuality")),
+        score_color(habit, raw_label=labels.get("HabitBalance")),
+        score_color(overload, invert=True, raw_label=labels.get("DigitalOverload")),
+    ]
     grid = ""
     for lvl in [0.25,0.5,0.75,1.0]:
         pts = []
@@ -336,7 +345,7 @@ def radar_svg(focus, sleep, overload, habit, size=230):
     poly_d = " ".join(f"{x:.1f},{y:.1f}" for x,y in pts_d)
     data_shape = f'<polygon points="{poly_d}" fill="rgba(99,102,241,0.08)" stroke="rgba(99,102,241,0.6)" stroke-width="1.8"/>'
     dots = ""; label_els = ""
-    for (x,y),lbl,col,val,a in zip(pts_d,labels,clrs,values,angles):
+    for (x,y),lbl,col,val,a in zip(pts_d,axis_labels,clrs,values,angles):
         dots += f'<circle cx="{x:.1f}" cy="{y:.1f}" r="6" fill="{col}" opacity="0.12"/><circle cx="{x:.1f}" cy="{y:.1f}" r="3.5" fill="{col}" opacity="0.9"/>'
         rd = math.radians(a); lx = cx+(r_max+25)*math.cos(rd); ly = cy-(r_max+25)*math.sin(rd)
         anchor = "middle"
@@ -348,7 +357,7 @@ def radar_svg(focus, sleep, overload, habit, size=230):
         label_els += f'<text x="{vx:.1f}" y="{vy+4:.1f}" fill="{col}" font-size="11" font-weight="700" font-family="JetBrains Mono,monospace" text-anchor="middle">{val*10:.1f}</text>'
     return f"""<svg width="{size}" height="{size}" viewBox="0 0 {size} {size}" xmlns="http://www.w3.org/2000/svg">{grid}{axes}{data_shape}{dots}{label_els}</svg>"""
 
-def sparkline_svg(values, width=200, height=40):
+def sparkline_svg(values, width=200, height=40, last_raw_label=None):
     if len(values) < 2: return ""
     mn, mx = min(values), max(values)
     rng = mx - mn if mx > mn else 1
@@ -359,7 +368,7 @@ def sparkline_svg(values, width=200, height=40):
         pts.append((x, y))
     path = "M " + " L ".join(f"{x:.1f},{y:.1f}" for x,y in pts)
     fill_path = path + f" L {pts[-1][0]:.1f},{height} L {pts[0][0]:.1f},{height} Z"
-    last_col = score_color(values[-1])
+    last_col = score_color(values[-1], raw_label=last_raw_label)
     dots = "".join(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="2.5" fill="{last_col}" opacity="0.7"/>' for x,y in pts)
     return f"""<svg width="{width}" height="{height}" xmlns="http://www.w3.org/2000/svg">
   <defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="{last_col}" stop-opacity="0.2"/><stop offset="100%" stop-color="{last_col}" stop-opacity="0"/></linearGradient></defs>
@@ -378,7 +387,7 @@ with st.sidebar:
     sliders = [
         ("ScreenGlances","Screen Glances",0,150,50,1,"Phone unlocks / day"),
         ("IdleChecking","Idle Checking",0,80,20,1,"Habitual short checks / day"),
-        ("LateNightUse","Late Night Use",0,120,30,1,"Minutes of use before bedtime"),
+        ("LateNightUse","Late Night Use",0,120,30,1,"Minutes of smartphone use in bed before sleep"),
         ("SocialMediaUsage","Social Media %",0,100,40,1,"% of total screen time"),
     ]
     vals = {}
@@ -413,10 +422,15 @@ result = evaluate_fuzzy_system(
     social_media_value=vals["SocialMediaUsage"],
 )
 o = result["outputs"]
+labels = result["labels"]
 focus, sleep, overload, habit = o["FocusQuality"], o["SleepQuality"], o["DigitalOverload"], o["HabitBalance"]
+focus_raw_label = labels["FocusQuality"]
+sleep_raw_label = labels["SleepQuality"]
+overload_raw_label = labels["DigitalOverload"]
+habit_raw_label = labels["HabitBalance"]
 
-hab_col = score_color(habit)
-hab_lbl, hab_cls = score_label(habit)
+hab_col = score_color(habit, raw_label=habit_raw_label)
+hab_lbl, hab_cls = score_label(habit, raw_label=habit_raw_label)
 p_icon, p_name, p_desc = detect_profile(vals["ScreenGlances"], vals["IdleChecking"], vals["LateNightUse"], vals["SocialMediaUsage"])
 recs = specific_recs(vals["ScreenGlances"], vals["IdleChecking"], vals["LateNightUse"], vals["SocialMediaUsage"])
 
@@ -435,10 +449,11 @@ for pname, pinputs in PROFILE_BENCHMARKS:
         late_night_use_value=pinputs["LateNightUse"],
         social_media_value=pinputs["SocialMediaUsage"],
     )
-    cmp_results.append((pname, pr["outputs"]["HabitBalance"]))
+    cmp_results.append((pname, pr["outputs"]["HabitBalance"], pr["labels"]["HabitBalance"]))
 
 # History scores
 hist_scores = []
+hist_labels = []
 for h in st.session_state.history:
     hr = evaluate_fuzzy_system(
         screen_glances_value=h["ScreenGlances"],
@@ -447,6 +462,7 @@ for h in st.session_state.history:
         social_media_value=h["SocialMediaUsage"],
     )
     hist_scores.append(hr["outputs"]["HabitBalance"])
+    hist_labels.append(hr["labels"]["HabitBalance"])
 
 # ============================================================
 # HERO
@@ -488,7 +504,7 @@ with c1:
     ''', unsafe_allow_html=True)
 
 with c2:
-    r_svg = radar_svg(focus, sleep, overload, habit, size=230)
+    r_svg = radar_svg(focus, sleep, overload, habit, labels=labels, size=230)
     st.markdown(f'''
     <div class="card card-glow-violet">
         <div class="card-label">Output Profile Radar</div>
@@ -513,9 +529,9 @@ with c3:
 st.markdown('<div style="height:0.8rem"></div>', unsafe_allow_html=True)
 m1, m2, m3, m4 = st.columns(4, gap="small")
 
-def mini_card(col, name, val, invert=False, note=""):
-    col_hex = score_color(val, invert)
-    lbl, _  = score_label(val, invert)
+def mini_card(col, name, val, invert=False, note="", raw_label=None):
+    col_hex = score_color(val, invert, raw_label=raw_label)
+    lbl, _  = score_label(val, invert, raw_label=raw_label)
     bar_w   = int(((10-val) if invert else val) / 10 * 100)
     col.markdown(f"""
     <div class="mini-metric">
@@ -526,10 +542,10 @@ def mini_card(col, name, val, invert=False, note=""):
     </div>
     """, unsafe_allow_html=True)
 
-mini_card(m1, "Focus Quality",   focus,   False)
-mini_card(m2, "Sleep Quality",   sleep,   False)
-mini_card(m3, "Digital Overload",overload, True, " ↓")
-mini_card(m4, "Habit Balance",   habit,   False)
+mini_card(m1, "Focus Quality",    focus,    False, raw_label=focus_raw_label)
+mini_card(m2, "Sleep Quality",    sleep,    False, raw_label=sleep_raw_label)
+mini_card(m3, "Digital Overload", overload, True, " ↓", raw_label=overload_raw_label)
+mini_card(m4, "Habit Balance",    habit,    False, raw_label=habit_raw_label)
 
 # ============================================================
 # ROW 3 — History · Comparison · Rule Breakdown
@@ -540,16 +556,16 @@ r3a, r3b, r3c = st.columns([1, 1, 1.2], gap="small")
 # History
 with r3a:
     if hist_scores:
-        spark = sparkline_svg(hist_scores, width=220, height=44)
+        spark = sparkline_svg(hist_scores, width=220, height=44, last_raw_label=hist_labels[-1])
         hist_html = f'<div style="display:flex;justify-content:center;margin-bottom:0.5rem">{spark}</div>'
         trend_val = hist_scores[-1] - hist_scores[-2] if len(hist_scores) >= 2 else 0
         trend_sym = "↑" if trend_val > 0.1 else "↓" if trend_val < -0.1 else "→"
         trend_col = "#34d399" if trend_val > 0.1 else "#f87171" if trend_val < -0.1 else "#fbbf24"
         rows = ""
-        for i, sc in enumerate(reversed(hist_scores[-5:])):
+        for i, (sc, raw_lbl) in enumerate(reversed(list(zip(hist_scores[-5:], hist_labels[-5:])))):
             idx = len(hist_scores) - i
-            col_h = score_color(sc)
-            lbl_h, _ = score_label(sc)
+            col_h = score_color(sc, raw_label=raw_lbl)
+            lbl_h, _ = score_label(sc, raw_label=raw_lbl)
             w = int(sc/10*100)
             rows += f'<div class="hist-row"><span class="hist-idx">#{idx}</span><span class="hist-score" style="color:{col_h}">{sc:.2f}</span><div class="hist-bar"><div class="hist-bar-fill" style="width:{w}%;background:{col_h};opacity:0.7"></div></div><span style="color:{col_h};font-size:0.72rem">{lbl_h}</span></div>'
         st.markdown(f'''
@@ -575,10 +591,10 @@ with r3a:
 with r3b:
     rows = ""
     you_added = False
-    all_scores = [(pname, sc) for pname, sc in cmp_results] + [("🫵 You", habit)]
+    all_scores = [(pname, sc, raw_lbl) for pname, sc, raw_lbl in cmp_results] + [("🫵 You", habit, habit_raw_label)]
     all_scores_sorted = sorted(all_scores, key=lambda x: -x[1])
-    for pname, sc in all_scores_sorted:
-        col_c = score_color(sc)
+    for pname, sc, raw_lbl in all_scores_sorted:
+        col_c = score_color(sc, raw_label=raw_lbl)
         w = int(sc/10*100)
         is_you = pname == "🫵 You"
         extra = 'cmp-you' if is_you else ''
